@@ -64,16 +64,6 @@ Drive_Cycle_Num = 6;
 sim('HEV_powersplit_adapted')
 HEV_SeriesParallel_plot1speeds
 
-%% Simulation Results from Simscape Logging, Drive Cycle 6, Detailed Electrical System
-%
-% The plot below shows the wheel speeds during the maneuver.
-Drive_Cycle_Num = 6;
-
-HEV_SeriesParallel_config_electrical('HEV_powersplit_adapted','Detailed')
-sim('HEV_powersplit_adapted')
-HEV_SeriesParallel_plot1speeds
-HEV_SeriesParallel_plot2torqueDetailed
-
 %%
 
 close all

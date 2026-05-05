@@ -2,7 +2,7 @@
 %% Plot Description:
 %
 % The plot below shows the requested and measured torque for the
-% simulation run, as well as the phase currents in the electric drive.
+% test, as well as the phase currents in the electric drive.
 
 % Copyright 2017-2025 The MathWorks, Inc.
 
@@ -27,8 +27,13 @@ hold on
 plot(simlog_t, simlog_vehSpd,'--','LineWidth', 1,'DisplayName','Measured')
 hold off
 grid on
-title('Vehicle Speed')
+if exist('Drive_Cycle_Num','var')
+    title(['Vehicle Speed - Drive Cycle ' num2str(Drive_Cycle_Num)])
+else
+    title('Vehicle Speed')
+end
 ylabel('Speed (kph)')
+xlabel('Time (s)')
 legend('Location','NorthWest');
 
 annStr = ['# Steps: ' num2str(length(simlog_t)) ', Duration: ' num2str(Elapsed_Sim_Time)];

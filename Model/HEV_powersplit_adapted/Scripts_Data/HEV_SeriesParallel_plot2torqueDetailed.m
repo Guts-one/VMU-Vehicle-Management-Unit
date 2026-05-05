@@ -2,7 +2,7 @@
 %% Plot Description:
 %
 % The plot below shows the requested and measured torque for the
-% simulation run, as well as the phase currents in the electric drive.
+% test, as well as the phase currents in the electric drive.
 
 % Copyright 2017-2025 The MathWorks, Inc.
 
