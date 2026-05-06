@@ -18,6 +18,26 @@ jobs:
       - name: Install cppcheck
         run: sudo apt-get update && sudo apt-get install -y cppcheck
 
+      - name: Diagnose cppcheck environment
+        run: |
+          set +e
+          echo "=== cppcheck version ==="
+          cppcheck --version
+          echo "=== which cppcheck / addons dir ==="
+          which cppcheck
+          ls -la /usr/share/cppcheck/addons/ || true
+          echo "=== python3 version ==="
+          python3 --version
+          echo "=== try running misra.py addon directly ==="
+          python3 /usr/share/cppcheck/addons/misra.py --help 2>&1 || true
+          echo "=== try generating a dump and running misra.py on it ==="
+          cppcheck --dump -Iinc src/mode_logic_team.c 2>&1 || true
+          ls -la src/*.dump 2>&1 || true
+          if [ -f src/mode_logic_team.c.dump ]; then
+            python3 /usr/share/cppcheck/addons/misra.py src/mode_logic_team.c.dump 2>&1 || true
+          fi
+          echo "=== end of diagnostics ==="
+
       - name: Run MISRA C 2012 analysis
         run: |
           set +e
