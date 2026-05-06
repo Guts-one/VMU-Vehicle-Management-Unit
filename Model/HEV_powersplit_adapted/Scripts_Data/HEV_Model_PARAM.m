@@ -25,7 +25,7 @@ HEV_Param.Battery_Det.Initial_SOC = 75.75;       % Percent
 HEV_Param.Battery_Det.Series_Resistance = 0.2/10;   % Ohm
 
 
-% FOR ACCELERATION CASE
+% FOR ACCEL TEST
 %HEV_Param.Battery_Det.Initial_SOC = 97;         % Percent
 
 % GENERIC BATTERY PARAMS

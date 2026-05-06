@@ -4,73 +4,72 @@
 % Move to folder where script is saved
 cd(fileparts(which(mfilename)));
 
-% Open model and save under a temporary name for the parameter sweep
+% Open model and save under another name for test
 orig_mdl = 'HEV_powersplit_adapted';
 open_system(orig_mdl);
 mdl = [orig_mdl '_pct_temp' ]; 
 save_system(orig_mdl,mdl);
 
-try
-    %% Configure model for sweep runs
+%% Configure model for tests
 
-    % Set up parameters
-    HEV_Vehicle_Mass = HEV_Param.Vehicle.Mass;
-    %HEV_Model_Driver_Ki = 0.04;
+% Set up parameters
+HEV_Vehicle_Mass = HEV_Param.Vehicle.Mass;
+%HEV_Model_Driver_Ki = 0.04;
 
-    % Model settings
-    HEV_SeriesParallel_config_electrical(mdl,'System')
-    %Select_HEV_Model_Systems(mdl,'Sys BC VS',HEV_Configs);
-    %HEVSP_tictoc('off');
-    set_param([mdl '/Vehicle/Vehicle Body'],'mass','HEV_Vehicle_Mass');
-    %set_param([mdl '/SLRT Scope'],'Commented','on');
-    %set_param(bdroot,'SimscapeLogType','none');
-    Drive_Cycle_Num = 1; 
-    %set_param(mdl,'StopTime',num2str(eval(['UrbanCycle' num2str(Drive_Cycle_Num) '.time(end)'])));
+% Model settings
+HEV_SeriesParallel_config_electrical(mdl,'System')
+%Select_HEV_Model_Systems(mdl,'Sys BC VS',HEV_Configs);
+%HEVSP_tictoc('off');
+set_param([mdl '/Vehicle/Vehicle Body'],'mass','HEV_Vehicle_Mass');
+%set_param([mdl '/SLRT Scope'],'Commented','on');
+%set_param(bdroot,'SimscapeLogType','none');
+Drive_Cycle_Num = 1; 
+%set_param(mdl,'StopTime',num2str(eval(['UrbanCycle' num2str(Drive_Cycle_Num) '.time(end)'])));
 
-    save_system(mdl);
+save_system(mdl);
 
-    %% Generate parameter sets
-    Mass_array = [1000:40:1600]; 
+%% Generate parameter sets
+Mass_array = [1000:40:1600]; 
 
-    for i=1:length(Mass_array)
-        simInput(i) = Simulink.SimulationInput(mdl);
-        HEV_Vehicle_Mass = Mass_array(i);
-        simInput(i) = simInput(i).setVariable('HEV_Vehicle_Mass',HEV_Vehicle_Mass);
-    end
-
-    %% Run one simulation to see time used
-    timerVal = tic;
-    sim(mdl)
-    Elapsed_Sim_Time_single = toc(timerVal);
-    disp(['Elapsed Simulation Time Single Run: ' num2str(Elapsed_Sim_Time_single)]);
-
-    %% Run parameter sweep in parallel
-    timerVal = tic;
-    simOut = parsim(simInput,'ShowSimulationManager','on',...
-        'ShowProgress','on','UseFastRestart','on',...
-        'TransferBaseWorkspaceVariables','on');
-    Elapsed_Time_Time_parallel  = toc(timerVal);
-
-    %% Calculate elapsed time less setup of parallel
-    Elapsed_Time_Sweep = ...
-        (datenum(simOut(end).SimulationMetadata.TimingInfo.WallClockTimestampStop) - ...
-        datenum(simOut(1).SimulationMetadata.TimingInfo.WallClockTimestampStart)) * 86400;
-    disp(['Elapsed Sweep Time Total:      ' sprintf('%5.2f',Elapsed_Time_Sweep)]);
-    disp(['Elapsed Sweep Time/(Num Runs): ' sprintf('%5.2f',Elapsed_Time_Sweep/length(simOut))]);
-
-    %% Plot results
-    plot_sim_res(simOut,'Parallel Sweep',Elapsed_Time_Time_parallel)
-catch ME
-    close_parallel_pool();
-    cleanup_pct_temp_model(mdl);
-    rethrow(ME);
+for i=1:length(Mass_array)
+    simInput(i) = Simulink.SimulationInput(mdl);
+    HEV_Vehicle_Mass = Mass_array(i);
+    simInput(i) = simInput(i).setVariable('HEV_Vehicle_Mass',HEV_Vehicle_Mass);
 end
 
-%% Close parallel pool
-close_parallel_pool();
+%% Run one simulation to see time used
+timerVal = tic;
+sim(mdl)
+Elapsed_Sim_Time_single = toc(timerVal);
+disp(['Elapsed Simulation Time Single Run: ' num2str(Elapsed_Sim_Time_single)]);
 
-%% Cleanup temporary model
-cleanup_pct_temp_model(mdl);
+%% Run parameter sweep in parallel
+timerVal = tic;
+simOut = parsim(simInput,'ShowSimulationManager','on',...
+    'ShowProgress','on','UseFastRestart','on',...
+    'TransferBaseWorkspaceVariables','on');
+Elapsed_Time_Time_parallel  = toc(timerVal);
+
+%% Calculate elapsed time less setup of parallel
+Elapsed_Time_Sweep = ...
+    (datenum(simOut(end).SimulationMetadata.TimingInfo.WallClockTimestampStop) - ...
+    datenum(simOut(1).SimulationMetadata.TimingInfo.WallClockTimestampStart)) * 86400;
+disp(['Elapsed Sweep Time Total:       ' sprintf('%5.2f',Elapsed_Time_Sweep)]);
+disp(['Elapsed Sweep Time/(Num Tests): ' sprintf('%5.2f',Elapsed_Time_Sweep/length(simOut))]);
+
+%% Plot results
+plot_sim_res(simOut,'Parallel Test',Elapsed_Time_Time_parallel)
+
+
+%% Close parallel pool
+delete(gcp);
+
+%% Cleanup directory
+
+bdclose(mdl);
+delete([mdl '.slx']);
+
+
 
 %% Plot Function
 function plot_sim_res(simOut,annotation_str,elapsed_time)
@@ -99,23 +98,5 @@ Mass_array = evalin('base','Mass_array');
 legend(cellstr(num2str(fliplr(Mass_array(1:1:end))')),'FontSize',10);
 
 text(0.05,0.05,[annotation_str ', Elapsed Time: ' num2str(elapsed_time)],'Color',[1 1 1]*0.6,'Units','Normalized');
-end
-
-function close_parallel_pool()
-pool = gcp('nocreate');
-if ~isempty(pool)
-    delete(pool);
-end
-end
-
-function cleanup_pct_temp_model(mdl)
-if bdIsLoaded(mdl)
-    bdclose(mdl);
-end
-
-mdl_file = [mdl '.slx'];
-if exist(mdl_file,'file')
-    delete(mdl_file);
-end
 end
 
