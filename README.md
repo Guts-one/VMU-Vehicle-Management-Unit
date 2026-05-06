@@ -3,7 +3,7 @@
 ## Overview
 
 This repository hosts the VMU (Vehicle Management Unit) baseline for a power-split hybrid electric vehicle (HEV).
-It brings together the system reference model, a manual C implementation of the supervisory mode logic, the requirements/transition documentation, an interactive web simulator, and a complete test and CI infrastructure aligned with **MISRA C 2012**.
+It brings together the system reference model, a manual C implementation of the supervisory mode logic, the final requirements document, an interactive web simulator, and a complete test and CI infrastructure aligned with **MISRA C 2012**.
 
 The VMU supervisory logic selects operating modes — `STANDSTILL`, `EV`, `REGENB`, `START`, `ICE`, `HYBRID` — based on driver power demand, vehicle speed, battery state of charge, and engine speed.
 
@@ -14,27 +14,21 @@ The VMU supervisory logic selects operating modes — `STANDSTILL`, `EV`, `REGEN
 ├── .github/workflows/
 │   └── ci.yaml                      # Build, unit tests, and MISRA static analysis
 ├── Model/
-│   └── HEV_powersplit_adapted/      # Adapted Simulink reference model
+│   └── HEV_powersplit_adapted/      # Simulink reference model with requirements traceability
 ├── inc/
-│   ├── mode_logic.h                 # Original API (kept for reference/headers)
 │   └── mode_logic_team.h            # Modular team-oriented API (current baseline)
 ├── src/
 │   ├── mode_logic_team.c            # C implementation of the supervisory logic
 │   └── transicoes_estados_mode_logic.md
 ├── test/
-│   ├── Person_E_Gustavo/            # Person E test suite + Makefile + coverage tooling
-│   ├── shared_tests/                # Cross-cutting requirement tests
-│   ├── test_mcdc_bruna.c            # Persona-specific MC/DC suites
-│   ├── test_mcdc_danilo.c
-│   ├── test_mcdc_hugo.c
-│   ├── test_mcdc_marinel.c
-│   ├── test_mode_logic.c
-│   ├── test_mode_logic_team_hugo.c
-│   └── test_mode_logic_team_update.c
+│   ├── test_ev_transitions.c                      # EV-mode transition tests
+│   ├── test_regenb_transitions.c                  # Regenerative-braking transition tests
+│   ├── test_standstill_transitions.c              # Standstill transition tests
+│   ├── test_start_to_hybrid_ice_and_resets.c      # START → HYBRID/ICE and reset paths
+│   └── test_ice_hybrid_external_and_internal.c    # ICE/HYBRID external + internal transitions
+├── Test report/                     # Generated coverage report (HTML/lcov)
 ├── doc/
-│   ├── Requisitos_preview.pdf
-│   ├── Tests_verification.xlsx
-│   ├── Tests_verification_Person_E_and_shared_tests.xlsx
+│   ├── Requirements.pdf             # Final requirements document
 │   └── mapeamento_transicoes_secao4_por_responsavel.md
 ├── mode_logic_sim.html              # Interactive web simulator
 ├── misra.py                         # MISRA C 2012 verification script
@@ -48,7 +42,7 @@ The VMU supervisory logic selects operating modes — `STANDSTILL`, `EV`, `REGEN
 
 ### Simulink Reference Model
 
-Located in `Model/HEV_powersplit_adapted/`. It contains the supervisory model that the C baseline mirrors, along with overview material, scripts, image assets, and workflow support files.
+Located in `Model/HEV_powersplit_adapted/`. It contains the supervisory model that the C baseline mirrors, together with **requirements linked directly inside the model** for traceability, plus overview material, scripts, image assets, and workflow support files.
 
 ### C Mode Logic Baseline
 
@@ -65,27 +59,25 @@ The implementation provides:
 - centralized output mapping for motor, generator, and ICE enables (no one-step delay)
 - MISRA-oriented coding style: `const` inputs, explicit `uint8_t` booleans, structured control flow
 
-### Transition Documentation
+### Requirements & Transition Documentation
 
+- `doc/Requirements.pdf` — final requirements document.
 - `src/transicoes_estados_mode_logic.md` — state names, threshold mapping, transition priorities, and expected behavior per mode.
 - `doc/mapeamento_transicoes_secao4_por_responsavel.md` — Section 4 transitions mapped per responsible team member.
-- `doc/Requisitos_preview.pdf` — requirements preview.
 
 ### Test Suite
 
-The repository ships a layered test infrastructure built on the **Unity** framework with **MC/DC** and line-coverage reporting via `gcov`/`lcov`.
+The repository ships a transition-oriented test infrastructure built on the **Unity** framework with **MC/DC** and line-coverage reporting via `gcov`/`lcov`. Tests are organized by the state-machine transition they exercise, rather than per author:
 
-| Suite | File / Directory | Scope |
+| Suite | File | Scope |
 |---|---|---|
-| Persona Bruna | `test/test_mcdc_bruna.c` | MC/DC + line coverage |
-| Persona Danilo | `test/test_mcdc_danilo.c` | MC/DC + line coverage |
-| Persona Hugo | `test/test_mcdc_hugo.c`, `test/test_mode_logic_team_hugo.c` | MC/DC and team-level integration |
-| Persona Marinel | `test/test_mcdc_marinel.c` | MC/DC for Marinel's transitions |
-| Persona E (Gustavo) | `test/Person_E_Gustavo/` | Only Persona E requirements are covered + MC/DC suite with dedicated Makefile and coverage report |
-| Shared requirements | `test/shared_tests/` | Cross-cutting tests covering SwHLR01/02/10, SysHLR01/02/03, NfHLR02/04 |
-| Baseline | `test/test_mode_logic.c`, `test/test_mode_logic_team_update.c` | Smoke tests for the baseline implementation |
+| EV transitions | `test/test_ev_transitions.c` | Entries, exits, and guards for EV mode |
+| Regen-B transitions | `test/test_regenb_transitions.c` | Regenerative-braking transitions |
+| Standstill transitions | `test/test_standstill_transitions.c` | STANDSTILL entry/exit |
+| START → HYBRID/ICE | `test/test_start_to_hybrid_ice_and_resets.c` | Cranking path and reset behavior |
+| ICE/HYBRID transitions | `test/test_ice_hybrid_external_and_internal.c` | External and internal ICE/HYBRID transitions |
 
-Test verification spreadsheets are kept under `doc/` for traceability between requirements and tests.
+The latest coverage report is published under `Test report/`.
 
 ### Interactive Web Simulator
 
@@ -110,11 +102,11 @@ Open it in any modern browser — no build step or server required.
 1. Open MATLAB.
 2. Navigate to `Model/HEV_powersplit_adapted`.
 3. Open `HEV_powersplit_adapted.slx`.
-4. See the local `README.md` inside the model folder for model-specific notes.
+4. See the local `README.md` inside the model folder for model-specific notes and the linked requirements view.
 
 ### Build and Run the C Tests
 
-The full build and coverage flow is documented in [UnityExecution.md](UnityExecution.md). A typical persona suite is built with the Unity sources placed at `unity/src/` and a one-line GCC invocation:
+The full build and coverage flow is documented in [UnityExecution.md](UnityExecution.md). A typical suite is built with the Unity sources placed at `unity/src/` and a one-line GCC invocation:
 
 ```bash
 gcc -std=c99 -Wall -Wextra \
@@ -127,18 +119,7 @@ gcc -std=c99 -Wall -Wextra \
 ./test_runner
 ```
 
-The Person E and shared-tests suites ship with their own Makefiles:
-
-```bash
-# Person E
-make -C test/Person_E_Gustavo            # build and run
-make -C test/Person_E_Gustavo coverage   # build, run, and emit lcov/HTML report
-
-# Shared (cross-cutting) tests
-make -C test/shared_tests
-```
-
-Coverage reports (when `lcov`/`genhtml` are available) are generated under each suite's `build_cov/html/` directory.
+Coverage reports (when `lcov`/`genhtml` are available) are published under `Test report/`.
 
 ## Code Quality & Standards
 
@@ -197,7 +178,7 @@ PR checks and downloadable analysis reports are available under the workflow run
 
 ## Notes
 
-- `src/mode_logic_team.c` is the single C implementation maintained on `main`. The legacy `src/mode_logic.c` was removed during the development cycle; its header remains for compatibility and reference.
+- `src/mode_logic_team.c` is the single C implementation maintained on `main`. Legacy per-author MC/DC suites and the `Person_E_Gustavo`/`shared_tests` folders were consolidated into the transition-oriented suites listed above.
 - `mode_logic_sim.html` is kept in sync with the thresholds and transition logic of `mode_logic_team.c`.
 - Generated Simulink artifacts under `Model/HEV_powersplit_adapted/slprj/` are intentionally not versioned; they are produced locally on first build.
 
