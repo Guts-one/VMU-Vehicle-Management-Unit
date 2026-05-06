@@ -34,6 +34,7 @@ jobs:
           set +e
           cppcheck --enable=all \
                    --suppress=missingIncludeSystem \
+                   --suppress=unmatchedSuppression \
                    --inline-suppr \
                    --error-exitcode=1 \
                    --output-file=cppcheck-report.txt \
