@@ -1,0 +1,17 @@
+src\mode_logic_team.c:257:12: style: The scope of the variable 'next' can be reduced. [variableScope]
+    Mode_t next;
+           ^
+src\mode_logic_team.c:247:6: style: The function 'ModeLogic_Init' is never used. [unusedFunction]
+void ModeLogic_Init(State_t *state)
+     ^
+src\mode_logic_team.c:255:6: style: The function 'ModeLogic_Step' is never used. [unusedFunction]
+void ModeLogic_Step(State_t *state, const Inputs_t *in, Outputs_t *out)
+     ^
+src\mode_logic_team.c:247:6: style: misra violation (use --rule-texts=<file> to get proper output) [misra-c2012-8.7]
+void ModeLogic_Init(State_t *state)
+     ^
+src\mode_logic_team.c:255:6: style: misra violation (use --rule-texts=<file> to get proper output) [misra-c2012-8.7]
+void ModeLogic_Step(State_t *state, const Inputs_t *in, Outputs_t *out)
+     ^
+nofile:0:0: information: Active checkers: 268/386 (use --checkers-report=<filename> to see details) [checkersReport]
+

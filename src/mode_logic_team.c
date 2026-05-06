@@ -244,6 +244,9 @@ static void write_outputs(Mode_t mode, Outputs_t *out)
     }
 }
 
+/* Public API consumed by test/ and external clients */
+/* cppcheck-suppress misra-c2012-8.7 */
+/* cppcheck-suppress unusedFunction */
 void ModeLogic_Init(State_t *state)
 {
     if (state != NULL) {
@@ -252,12 +255,13 @@ void ModeLogic_Init(State_t *state)
     }
 }
 
+/* Public API consumed by test/ and external clients */
+/* cppcheck-suppress misra-c2012-8.7 */
+/* cppcheck-suppress unusedFunction */
 void ModeLogic_Step(State_t *state, const Inputs_t *in, Outputs_t *out)
 {
-    Mode_t next;
-
     if ((state != NULL) && (in != NULL) && (out != NULL)) {
-        next = state->current_mode;
+        Mode_t next = state->current_mode;
 
         switch (state->current_mode) {
             case MODE_STANDSTILL:

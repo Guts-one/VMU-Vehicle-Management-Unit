@@ -20,17 +20,19 @@ jobs:
 
       - name: Run MISRA C 2012 analysis
         run: |
+          set +e
           cppcheck --enable=all \
                    --suppress=missingIncludeSystem \
                    --inline-suppr \
                    --addon=misra \
                    --error-exitcode=1 \
                    --output-file=cppcheck-report.txt \
-                   --xml \
                    -Iinc \
                    src/ inc/
+          STATUS=$?
           echo "=== MISRA C 2012 Analysis Report ==="
-          cat cppcheck-report.txt
+          cat cppcheck-report.txt || true
+          exit $STATUS
 
       - name: Upload analysis report
         if: always()
@@ -61,9 +63,12 @@ jobs:
                    test/test_standstill_transitions.c \
                    test/test_start_to_hybrid_ice_and_resets.c \
                    test/test_ice_hybrid_external_and_internal.c; do
+            echo "=== Generating runner for $t ==="
+            runner="${t%.c}_runner.c"
+            ruby unity/auto/generate_test_runner.rb "$t" "$runner"
             echo "=== Building $t ==="
             gcc -std=c99 -Wall -Wextra -Iinc -Iunity/src \
-                src/mode_logic_team.c unity/src/unity.c "$t" \
+                src/mode_logic_team.c unity/src/unity.c "$t" "$runner" \
                 -o test_runner
             echo "=== Running $t ==="
             ./test_runner
