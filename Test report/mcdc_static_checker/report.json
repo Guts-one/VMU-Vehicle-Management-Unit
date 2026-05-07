@@ -1,0 +1,26 @@
+[
+  {
+    "type": "issue",
+    "description": "BDD is not tree-like. Found solution: in->SOC < (0.35f), in->speed > (35.0f), in->P_dem >= (1.0f)",
+    "check_name": "bdd_is_not_tree_like",
+    "categories": [
+      "Bug Risk",
+      "Complexity"
+    ],
+    "location": {
+      "path": "src/mode_logic_team.c",
+      "positions": {
+        "begin": {
+          "line": 63,
+          "column": 9
+        },
+        "end": {
+          "line": 63,
+          "column": 9
+        }
+      }
+    },
+    "severity": "critical",
+    "fingerprint": "f0a0b702db433f1adfce6365ce6b2cbff966eb70765056066cce1b2d3167cc75"
+  }
+]

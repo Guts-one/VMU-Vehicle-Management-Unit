@@ -1,0 +1,15 @@
+Processing file src/mode_logic_team.c
+  Non tree-like decision in file src/mode_logic_team.c at line 63, column 9
+
+Statistics (including decisions encountered multiple times, e.g. in included headers):
+  Number of decisions: 16
+  Number of tree-like decisions: 15
+  Number of correctable non-tree-like decisions: 1
+  Number of non-correctable non-tree-like decisions: 0
+  Number of compiler preprocess/parse errors: 0
+  Number of files checked: 1
+
+The following errors were found (excluding decisions encountered multiple times, e.g. in headers):
+  BDD is not tree-like:
+    file src/mode_logic_team.c in line 63 column 9
+      Found solution: in->SOC < (0.35f), in->speed > (35.0f), in->P_dem >= (1.0f)

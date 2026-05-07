@@ -1,0 +1,20 @@
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:20:test_init_null:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:21:test_init_valid:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:22:test_output_regenb:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:23:test_regenb_ev_pdem_blocks:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:24:test_regenb_ev_speed_stop_blocks:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:25:test_regenb_standstill_pdem_high_blocks:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:26:test_regenb_standstill_pdem_low_blocks:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:27:test_regenb_standstill_speed_blocks:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:28:test_regenb_start_blocked_by_speed_and_soc:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:29:test_regenb_to_ev_base:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:30:test_regenb_to_standstill_base:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:31:test_regenb_to_start_high_speed:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:32:test_regenb_to_start_low_soc:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:33:test_step_null_inputs:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:34:test_step_null_outputs:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_regenb_transitions_runner.c:35:test_step_null_state:PASS
+
+-----------------------
+16 Tests 0 Failures 0 Ignored 
+OK

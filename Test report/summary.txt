@@ -1,0 +1,25 @@
+mode_logic_team.c — coverage summary
+====================================
+
+Tests:                   141 / 0 failures (5 Unity binaries, 141 RUN_TEST calls)
+Functions:               11 / 11   (100.00 %)
+Lines:                   157 / 165 (95.15 %)
+Branches (lcov):         122 / 130 (93.85 %)
+MC/DC condition outcomes (gcov-14 --conditions):
+                         108 / 116 (93.10 %)
+
+Static MC/DC check (mcdc-checker):
+  16 decisions, 15 tree-like, 1 correctable non-tree-like
+  - src/mode_logic_team.c:63  REGENB->START  ((A && B) || C)
+
+Uncovered MC/DC outcomes (8): all structurally unreachable
+  line  18  cond 1 F   STANDSTILL->START   short-circuit pair-match
+  line  18  cond 2 F   STANDSTILL->START   line-12 catches (T,F,F)
+  line  63  cond 1 F   REGENB->START       BDD non tree-like
+  line  74  cond 2 F   REGENB->EV          short-circuit pair-match
+  line  74  cond 3 F   REGENB->EV          line-63 catches speed>EV_MAX
+  line 138  cond 1 F   START->ICE          short-circuit pair-match
+  line 138  cond 2 F   START->ICE          structural (line 133 forces c3=c4=T)
+  line 138  cond 3 F   START->ICE          line-133 catches speed>EV_MAX
+
+See MCDC_matrix.md §4 for the per-outcome reachability proofs.

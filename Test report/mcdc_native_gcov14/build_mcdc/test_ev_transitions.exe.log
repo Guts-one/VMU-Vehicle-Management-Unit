@@ -1,0 +1,20 @@
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:20:test_ev_regenb_pdem_false:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:21:test_ev_regenb_speed_false:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:22:test_ev_standstill_pdem_high_blocks:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:23:test_ev_standstill_pdem_low_blocks:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:24:test_ev_standstill_speed_blocks:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:25:test_ev_to_regenb_base:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:26:test_ev_to_standstill_base:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:27:test_ev_to_start_high_pdem:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:28:test_ev_to_start_high_speed:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:29:test_ev_to_start_low_soc:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:30:test_init_null:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:31:test_init_valid:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:32:test_output_ev:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:33:test_step_null_inputs:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:34:test_step_null_outputs:PASS
+/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_ev_transitions_runner.c:35:test_step_null_state:PASS
+
+-----------------------
+16 Tests 0 Failures 0 Ignored 
+OK

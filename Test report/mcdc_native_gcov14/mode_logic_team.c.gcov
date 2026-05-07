@@ -1,0 +1,335 @@
+        -:    0:Source:src/mode_logic_team.c
+        -:    0:Graph:/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/mode_logic_team.gcno
+        -:    0:Data:/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/mode_logic_team.gcda
+        -:    0:Runs:5
+        -:    1:/* VMU - mode logic */
+        -:    2:
+        -:    3:#include <stddef.h>            
+        -:    4:#include "../inc/mode_logic_team.h"
+        -:    5:
+        -:    6:/* Priority: EV before START. */
+        8:    7:static Mode_t handle_standstill(const Inputs_t *in)
+        -:    8:{
+        8:    9:    Mode_t next = MODE_STANDSTILL;
+        -:   10:
+        -:   11:    /* STANDSTILL -> EV */
+        8:   12:    if ((in->speed >  SPEED_STOP)   &&
+condition outcomes covered 6/6
+        5:   13:        (in->speed <= SPEED_EV_MAX) &&
+        3:   14:        (in->SOC   >= SOC_EV_IN)) {
+        1:   15:        next = MODE_EV;
+        -:   16:    }
+        -:   17:    /* STANDSTILL -> START */
+        7:   18:    else if ((in->speed > SPEED_STOP) &&
+condition outcomes covered 4/6
+condition  1 not covered (false)
+condition  2 not covered (false)
+        4:   19:             ((in->speed > SPEED_EV_MAX) ||
+        2:   20:              (in->SOC   <  SOC_EV_IN))) {
+        4:   21:        next = MODE_START;
+        -:   22:    }
+        -:   23:    else {
+        -:   24:    }
+        -:   25:
+        8:   26:    return next;
+        -:   27:}
+        -:   28:
+        -:   29:/* EV entry: SOC_EV_IN (0.37), exit: SOC_EV_OUT (0.35) -- hysteresis gap. */
+       11:   30:static Mode_t handle_ev(const Inputs_t *in)
+        -:   31:{
+       11:   32:    Mode_t next = MODE_EV;
+        -:   33:
+        -:   34:    /* EV -> REGENB */
+       11:   35:    if ((in->speed >  SPEED_REGEN) &&
+condition outcomes covered 4/4
+        6:   36:        (in->P_dem <= PDEM_REGEN)) {
+        1:   37:        next = MODE_REGENB;
+        -:   38:    }
+        -:   39:    /* EV -> START */
+       10:   40:    else if ((in->speed > SPEED_EV_MAX) ||
+condition outcomes covered 6/6
+        9:   41:             (in->P_dem >= PDEM_HYB_IN) ||
+        8:   42:             (in->SOC   <  SOC_EV_OUT)) {
+        3:   43:        next = MODE_START;
+        -:   44:    }
+        -:   45:    /* EV -> STANDSTILL */
+        7:   46:    else if ((in->speed <= SPEED_STOP)     &&
+condition outcomes covered 6/6
+        3:   47:             (in->P_dem <= PDEM_STOP_HIGH) &&
+        2:   48:             (in->P_dem >= PDEM_STOP_LOW)) {
+        1:   49:        next = MODE_STANDSTILL;
+        -:   50:    }
+        -:   51:    else {
+        -:   52:    }
+        -:   53:
+       11:   54:    return next;
+        -:   55:}
+        -:   56:
+        -:   57:
+       11:   58:static Mode_t handle_regenb(const Inputs_t *in)
+        -:   59:{
+       11:   60:    Mode_t next = MODE_REGENB;
+        -:   61:
+        -:   62:    /* REGENB -> START */
+       11:   63:    if (((in->speed > SPEED_EV_MAX) && (in->P_dem >= PDEM_STOP_LOW)) ||
+condition outcomes covered 5/6
+condition  1 not covered (false)
+       10:   64:        (in->SOC < SOC_EV_OUT)) {
+        2:   65:        next = MODE_START;
+        -:   66:    }
+        -:   67:    /* REGENB -> STANDSTILL */
+        9:   68:    else if ((in->speed <= SPEED_STOP)     &&
+condition outcomes covered 6/6
+        4:   69:             (in->P_dem <= PDEM_STOP_HIGH) &&
+        3:   70:             (in->P_dem >= PDEM_STOP_LOW)) {
+        2:   71:        next = MODE_STANDSTILL;
+        -:   72:    }
+        -:   73:    /* REGENB -> EV */
+        7:   74:    else if ((in->P_dem >= PDEM_STOP_LOW) &&
+condition outcomes covered 6/8
+condition  2 not covered (false)
+condition  3 not covered (false)
+        3:   75:             (in->speed > SPEED_STOP) &&
+        2:   76:             (in->speed <= SPEED_EV_MAX) &&
+        2:   77:             (in->SOC >= SOC_EV_OUT)) {
+        2:   78:        next = MODE_EV;
+        -:   79:    }
+        -:   80:    else {
+        -:   81:    }
+        -:   82:
+       11:   83:    return next;
+        -:   84:}
+        -:   85:
+        -:   86:/* Common exit from Motion_mode_ICE (shared by START, ICE, HYBRID). */
+       88:   87:static Mode_t motion_ice_common_exit(const Inputs_t *in, Mode_t current_in_block)
+        -:   88:{
+       88:   89:    Mode_t next = current_in_block;
+        -:   90:
+       88:   91:    if ((in->wEng > ENG_ON) &&
+condition outcomes covered 6/6
+       65:   92:        (in->speed > SPEED_REGEN) &&
+       51:   93:        (in->P_dem <= PDEM_REGEN)) {
+        6:   94:        next = MODE_REGENB;
+       82:   95:    } else if ((in->wEng > ENG_ON) &&
+condition outcomes covered 12/12
+       59:   96:               (in->P_dem <= PDEM_HYB_OUT) &&
+       56:   97:               (in->P_dem >= PDEM_STOP_LOW) &&
+       46:   98:               (in->speed > SPEED_STOP) &&
+       36:   99:               (in->speed <= SPEED_EV_MAX) &&
+       20:  100:               (in->SOC >= SOC_EV_IN)) {
+        8:  101:        next = MODE_EV;
+       74:  102:    } else if ((in->speed <= SPEED_STOP) &&
+condition outcomes covered 6/6
+       16:  103:               (in->P_dem <= PDEM_STOP_HIGH) &&
+       10:  104:               (in->P_dem >= PDEM_STOP_LOW)) {
+        7:  105:        next = MODE_STANDSTILL;
+        -:  106:    } else {
+        -:  107:    }
+        -:  108:
+       88:  109:    return next;
+        -:  110:}
+        -:  111:
+        -:  112:/* Reset to START when engine stalls (checked before ICE <-> HYBRID). */
+       43:  113:static Mode_t internal_motion_ice_reset(const Inputs_t *in, Mode_t current_in_block)
+        -:  114:{
+       43:  115:    Mode_t next = current_in_block;
+        -:  116:
+       43:  117:    if (in->wEng <= ENG_OFF) {
+condition outcomes covered 2/2
+        4:  118:        next = MODE_START;
+        -:  119:    } else {
+        -:  120:    }
+        -:  121:
+       43:  122:    return next;
+        -:  123:}
+        -:  124:
+        -:  125:
+       30:  126:static Mode_t handle_start(const Inputs_t *in)
+        -:  127:{
+        -:  128:    Mode_t next;
+        -:  129:
+       30:  130:    next = motion_ice_common_exit(in, MODE_START);
+        -:  131:
+       30:  132:    if (next == MODE_START) {
+condition outcomes covered 2/2
+       24:  133:        if ((in->wEng > ENG_ON) &&
+condition outcomes covered 8/8
+       16:  134:            (in->SOC >= SOC_MID) &&
+       12:  135:            ((in->speed > SPEED_EV_MAX) ||
+       10:  136:             (in->P_dem >= PDEM_HYB_MID))) {
+        4:  137:            next = MODE_HYBRID;
+       20:  138:        } else if ((in->wEng > ENG_ON) &&
+condition outcomes covered 5/8
+condition  1 not covered (false)
+condition  2 not covered (false)
+condition  3 not covered (false)
+       12:  139:                   ((in->SOC < SOC_MID) ||
+        8:  140:                    ((in->speed <= SPEED_EV_MAX) &&
+        8:  141:                     (in->P_dem < PDEM_HYB_MID)))) {
+       12:  142:            next = MODE_ICE;
+        -:  143:        } else {
+        -:  144:        }
+        -:  145:    } else {
+        -:  146:    }
+        -:  147:
+       30:  148:    return next;
+        -:  149:}
+        -:  150:
+        -:  151:
+       30:  152:static Mode_t handle_ice(const Inputs_t *in)
+        -:  153:{
+        -:  154:    Mode_t next;
+        -:  155:
+       30:  156:    next = motion_ice_common_exit(in, MODE_ICE);
+        -:  157:
+       30:  158:    if (next == MODE_ICE) {
+condition outcomes covered 2/2
+       22:  159:        next = internal_motion_ice_reset(in, next);
+        -:  160:    } else {
+        -:  161:    }
+        -:  162:
+       30:  163:    if (next == MODE_ICE) {
+condition outcomes covered 2/2
+       20:  164:        if ((in->P_dem >= PDEM_HYB_MID) &&
+condition outcomes covered 4/4
+        5:  165:            (in->SOC   >= SOC_MID)) {
+        4:  166:            next = MODE_HYBRID;
+        -:  167:        } else {
+        -:  168:        }
+        -:  169:    } else {
+        -:  170:    }
+        -:  171:
+       30:  172:    return next;
+        -:  173:}
+        -:  174:
+        -:  175:
+       28:  176:static Mode_t handle_hybrid(const Inputs_t *in)
+        -:  177:{
+        -:  178:    Mode_t next;
+        -:  179:
+       28:  180:    next = motion_ice_common_exit(in, MODE_HYBRID);
+        -:  181:
+       28:  182:    if (next == MODE_HYBRID) {
+condition outcomes covered 2/2
+       21:  183:        next = internal_motion_ice_reset(in, next);
+        -:  184:    } else {
+        -:  185:    }
+        -:  186:
+       28:  187:    if (next == MODE_HYBRID) {
+condition outcomes covered 2/2
+       19:  188:        if ((in->P_dem <= PDEM_HYB_LOW) ||
+condition outcomes covered 4/4
+        5:  189:            (in->SOC   <  SOC_LOW)) {
+       15:  190:            next = MODE_ICE;
+        -:  191:        } else {
+        -:  192:        }
+        -:  193:    } else {
+        -:  194:    }
+        -:  195:
+       28:  196:    return next;
+        -:  197:}
+        -:  198:
+        -:  199:
+      118:  200:static void write_outputs(Mode_t mode, Outputs_t *out)
+        -:  201:{
+      118:  202:    switch (mode) {
+       13:  203:        case MODE_STANDSTILL:
+       13:  204:            out->Mot_Enable = 0U;
+       13:  205:            out->Gen_Enable = 0U;
+       13:  206:            out->ICE_Enable = 0U;
+       13:  207:            break;
+        -:  208:
+       17:  209:        case MODE_EV:
+       17:  210:            out->Mot_Enable = 1U;
+       17:  211:            out->Gen_Enable = 0U;
+       17:  212:            out->ICE_Enable = 0U;
+       17:  213:            break;
+        -:  214:
+       12:  215:        case MODE_REGENB:
+       12:  216:            out->Mot_Enable = 1U;
+       12:  217:            out->Gen_Enable = 0U;
+       12:  218:            out->ICE_Enable = 0U;
+       12:  219:            break;
+        -:  220:
+       21:  221:        case MODE_START:
+       21:  222:            out->Mot_Enable = 1U;
+       21:  223:            out->Gen_Enable = 1U;
+       21:  224:            out->ICE_Enable = 0U;
+       21:  225:            break;
+        -:  226:
+       43:  227:        case MODE_ICE:
+       43:  228:            out->Mot_Enable = 0U;
+       43:  229:            out->Gen_Enable = 1U;
+       43:  230:            out->ICE_Enable = 1U;
+       43:  231:            break;
+        -:  232:
+       12:  233:        case MODE_HYBRID:
+       12:  234:            out->Mot_Enable = 1U;
+       12:  235:            out->Gen_Enable = 1U;
+       12:  236:            out->ICE_Enable = 1U;
+       12:  237:            break;
+        -:  238:
+    #####:  239:        default:
+    #####:  240:            out->Mot_Enable = 0U;
+    #####:  241:            out->Gen_Enable = 0U;
+    #####:  242:            out->ICE_Enable = 0U;
+    #####:  243:            break;
+        -:  244:    }
+      118:  245:}
+        -:  246:
+        -:  247:/* Public API consumed by test/ and external clients */
+        -:  248:/* cppcheck-suppress misra-c2012-8.7 */
+        -:  249:/* cppcheck-suppress unusedFunction */
+      106:  250:void ModeLogic_Init(State_t *state)
+        -:  251:{
+      106:  252:    if (state != NULL) {
+condition outcomes covered 2/2
+      101:  253:        state->current_mode = MODE_STANDSTILL;
+        -:  254:    } else {
+        -:  255:    }
+      106:  256:}
+        -:  257:
+        -:  258:/* Public API consumed by test/ and external clients */
+        -:  259:/* cppcheck-suppress misra-c2012-8.7 */
+        -:  260:/* cppcheck-suppress unusedFunction */
+      133:  261:void ModeLogic_Step(State_t *state, const Inputs_t *in, Outputs_t *out)
+        -:  262:{
+      133:  263:    if ((state != NULL) && (in != NULL) && (out != NULL)) {
+condition outcomes covered 6/6
+      118:  264:        Mode_t next = state->current_mode;
+        -:  265:
+      118:  266:        switch (state->current_mode) {
+        8:  267:            case MODE_STANDSTILL:
+        8:  268:                next = handle_standstill(in);
+        8:  269:                break;
+        -:  270:
+       11:  271:            case MODE_EV:
+       11:  272:                next = handle_ev(in);
+       11:  273:                break;
+        -:  274:
+       11:  275:            case MODE_REGENB:
+       11:  276:                next = handle_regenb(in);
+       11:  277:                break;
+        -:  278:
+       30:  279:            case MODE_START:
+       30:  280:                next = handle_start(in);
+       30:  281:                break;
+        -:  282:
+       30:  283:            case MODE_ICE:
+       30:  284:                next = handle_ice(in);
+       30:  285:                break;
+        -:  286:
+       28:  287:            case MODE_HYBRID:
+       28:  288:                next = handle_hybrid(in);
+       28:  289:                break;
+        -:  290:
+    #####:  291:            default:
+    #####:  292:                next = MODE_STANDSTILL;
+    #####:  293:                break;
+        -:  294:        }
+        -:  295:
+      118:  296:        state->current_mode = next;
+      118:  297:        write_outputs(next, out);
+        -:  298:    } else {
+        -:  299:    }
+      133:  300:}

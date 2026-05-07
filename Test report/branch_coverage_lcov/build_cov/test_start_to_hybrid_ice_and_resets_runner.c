@@ -1,0 +1,45 @@
+#include "unity.h"
+void test_hybrid_reset_to_start(void);
+void test_ice_reset_to_start(void);
+void test_init_null(void);
+void test_init_valid(void);
+void test_output_hybrid(void);
+void test_output_ice(void);
+void test_output_start(void);
+void test_start_hybrid_a_false(void);
+void test_start_hybrid_b_false(void);
+void test_start_hybrid_c_true(void);
+void test_start_hybrid_d_false(void);
+void test_start_ice_a_false(void);
+void test_start_ice_e_true(void);
+void test_start_ice_f_true(void);
+void test_start_ice_g2_true(void);
+void test_start_to_hybrid_base(void);
+void test_start_to_ice_base(void);
+void test_step_null_inputs(void);
+void test_step_null_outputs(void);
+void test_step_null_state(void);
+int main(void) {
+    UNITY_BEGIN();
+    RUN_TEST(test_hybrid_reset_to_start);
+    RUN_TEST(test_ice_reset_to_start);
+    RUN_TEST(test_init_null);
+    RUN_TEST(test_init_valid);
+    RUN_TEST(test_output_hybrid);
+    RUN_TEST(test_output_ice);
+    RUN_TEST(test_output_start);
+    RUN_TEST(test_start_hybrid_a_false);
+    RUN_TEST(test_start_hybrid_b_false);
+    RUN_TEST(test_start_hybrid_c_true);
+    RUN_TEST(test_start_hybrid_d_false);
+    RUN_TEST(test_start_ice_a_false);
+    RUN_TEST(test_start_ice_e_true);
+    RUN_TEST(test_start_ice_f_true);
+    RUN_TEST(test_start_ice_g2_true);
+    RUN_TEST(test_start_to_hybrid_base);
+    RUN_TEST(test_start_to_ice_base);
+    RUN_TEST(test_step_null_inputs);
+    RUN_TEST(test_step_null_outputs);
+    RUN_TEST(test_step_null_state);
+    return UNITY_END();
+}
