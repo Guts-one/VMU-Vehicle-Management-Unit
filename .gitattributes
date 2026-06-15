@@ -1,0 +1,3 @@
+# Keep all files byte-exact: coverage artifacts are evidence and the
+# *.sh runners must stay LF or bash in WSL fails with 'bash\r' errors.
+* -text
