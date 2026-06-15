@@ -1,23 +1,23 @@
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:24:test_hybrid_reset_to_start:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:25:test_ice_reset_to_start:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:26:test_init_null:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:27:test_init_valid:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:28:test_output_hybrid:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:29:test_output_ice:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:30:test_output_start:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:31:test_start_hybrid_a_false:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:32:test_start_hybrid_b_false:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:33:test_start_hybrid_c_true:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:34:test_start_hybrid_d_false:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:35:test_start_ice_a_false:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:36:test_start_ice_e_true:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:37:test_start_ice_f_true:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:38:test_start_ice_g2_true:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:39:test_start_to_hybrid_base:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:40:test_start_to_ice_base:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:41:test_step_null_inputs:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:42:test_step_null_outputs:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:43:test_step_null_state:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:24:test_hybrid_reset_to_start:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:25:test_ice_reset_to_start:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:26:test_init_null:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:27:test_init_valid:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:28:test_output_hybrid:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:29:test_output_ice:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:30:test_output_start:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:31:test_start_hybrid_a_false:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:32:test_start_hybrid_b_false:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:33:test_start_hybrid_c_true:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:34:test_start_hybrid_d_false:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:35:test_start_ice_a_false:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:36:test_start_ice_e_true:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:37:test_start_ice_f_true:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:38:test_start_ice_g2_true:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:39:test_start_to_hybrid_base:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:40:test_start_to_ice_base:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:41:test_step_null_inputs:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:42:test_step_null_outputs:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_start_to_hybrid_ice_and_resets_runner.c:43:test_step_null_state:PASS
 
 -----------------------
 20 Tests 0 Failures 0 Ignored 

@@ -1,16 +1,16 @@
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:17:test_init_null:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:18:test_init_valid:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:19:test_output_standstill:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:20:test_standstill_ev_soc_lt_ev_in_blocks:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:21:test_standstill_ev_speed_gt_ev_max_blocks:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:22:test_standstill_ev_speed_le_stop_blocks:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:23:test_standstill_stay_low_speed:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:24:test_standstill_to_ev_base:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:25:test_standstill_to_start_high_speed:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:26:test_standstill_to_start_low_soc:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:27:test_step_null_inputs:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:28:test_step_null_outputs:PASS
-/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:29:test_step_null_state:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:17:test_init_null:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:18:test_init_valid:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:19:test_output_standstill:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:20:test_standstill_ev_soc_lt_ev_in_blocks:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:21:test_standstill_ev_speed_gt_ev_max_blocks:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:22:test_standstill_ev_speed_le_stop_blocks:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:23:test_standstill_stay_low_speed:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:24:test_standstill_to_ev_base:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:25:test_standstill_to_start_high_speed:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:26:test_standstill_to_start_low_soc:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:27:test_step_null_inputs:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:28:test_step_null_outputs:PASS
+/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/test_standstill_transitions_runner.c:29:test_step_null_state:PASS
 
 -----------------------
 13 Tests 0 Failures 0 Ignored 

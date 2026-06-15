@@ -11,15 +11,23 @@ mkdir -p "$BUILD" "$REPORT_DIR"
 
 CC=gcc-14
 GCOV=gcov-14
+UNITY_SRC_DIR="${UNITY_SRC_DIR:-unity/src}"
+if [ ! -f "$UNITY_SRC_DIR/unity.c" ] && [ -f "/home/vmu/unity/src/unity.c" ]; then
+    UNITY_SRC_DIR="/home/vmu/unity/src"
+fi
+if [ ! -f "$UNITY_SRC_DIR/unity.c" ]; then
+    echo "Unity source not found. Set UNITY_SRC_DIR to the directory containing unity.c." >&2
+    exit 1
+fi
 COMMON=(-std=c99 -Wall -Wextra -O0 -g
         --coverage -fcondition-coverage
         -fprofile-update=atomic
-        -I inc -I unity/src)
+        -I inc -I "$UNITY_SRC_DIR")
 
 # Compile mode_logic_team.c ONCE so a single .gcno/.gcda accumulates counters
 # from every test binary's run.
 $CC "${COMMON[@]}" -c src/mode_logic_team.c -o "$BUILD/mode_logic_team.o"
-$CC "${COMMON[@]}" -c unity/src/unity.c -o "$BUILD/unity.o"
+$CC "${COMMON[@]}" -c "$UNITY_SRC_DIR/unity.c" -o "$BUILD/unity.o"
 
 gen_runner() {
     local src="$1"; local out="$2"

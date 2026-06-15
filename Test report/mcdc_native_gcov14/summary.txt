@@ -1,6 +1,6 @@
 File 'src/mode_logic_team.c'
-Lines executed:95.15% of 165
-Condition outcomes covered:93.10% of 116
+Lines executed:97.28% of 294
+Condition outcomes covered:100.00% of 86
 Creating 'mode_logic_team.c.gcov'
 
-Lines executed:95.15% of 165
+Lines executed:97.28% of 294

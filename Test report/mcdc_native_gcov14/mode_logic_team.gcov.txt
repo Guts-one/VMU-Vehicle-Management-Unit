@@ -1,335 +1,634 @@
         -:    0:Source:src/mode_logic_team.c
-        -:    0:Graph:/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/mode_logic_team.gcno
-        -:    0:Data:/home/vmu/Claude_DEBUG_MCDC_2/Test report/mcdc_native_gcov14/build_mcdc/mode_logic_team.gcda
+        -:    0:Graph:/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/mode_logic_team.gcno
+        -:    0:Data:/home/vmu/vmu_fixed2_run/Test report/mcdc_native_gcov14/build_mcdc/mode_logic_team.gcda
         -:    0:Runs:5
         -:    1:/* VMU - mode logic */
         -:    2:
-        -:    3:#include <stddef.h>            
+        -:    3:#include <stddef.h>
         -:    4:#include "../inc/mode_logic_team.h"
         -:    5:
-        -:    6:/* Priority: EV before START. */
-        8:    7:static Mode_t handle_standstill(const Inputs_t *in)
-        -:    8:{
-        8:    9:    Mode_t next = MODE_STANDSTILL;
-        -:   10:
-        -:   11:    /* STANDSTILL -> EV */
-        8:   12:    if ((in->speed >  SPEED_STOP)   &&
-condition outcomes covered 6/6
-        5:   13:        (in->speed <= SPEED_EV_MAX) &&
-        3:   14:        (in->SOC   >= SOC_EV_IN)) {
-        1:   15:        next = MODE_EV;
-        -:   16:    }
-        -:   17:    /* STANDSTILL -> START */
-        7:   18:    else if ((in->speed > SPEED_STOP) &&
-condition outcomes covered 4/6
-condition  1 not covered (false)
-condition  2 not covered (false)
-        4:   19:             ((in->speed > SPEED_EV_MAX) ||
-        2:   20:              (in->SOC   <  SOC_EV_IN))) {
-        4:   21:        next = MODE_START;
-        -:   22:    }
-        -:   23:    else {
-        -:   24:    }
-        -:   25:
-        8:   26:    return next;
-        -:   27:}
-        -:   28:
-        -:   29:/* EV entry: SOC_EV_IN (0.37), exit: SOC_EV_OUT (0.35) -- hysteresis gap. */
-       11:   30:static Mode_t handle_ev(const Inputs_t *in)
+      115:    6:static uint8_t flag_speed_gt_stop(const Inputs_t *in)
+        -:    7:{
+      115:    8:    uint8_t result = 0U;
+        -:    9:
+      115:   10:    if (in->speed_dkph > SPEED_STOP_DKPH) {
+condition outcomes covered 2/2
+       89:   11:        result = 1U;
+        -:   12:    } else {
+        -:   13:    }
+        -:   14:
+      115:   15:    return result;
+        -:   16:}
+        -:   17:
+      110:   18:static uint8_t flag_speed_le_stop(const Inputs_t *in)
+        -:   19:{
+      110:   20:    uint8_t result = 0U;
+        -:   21:
+      110:   22:    if (in->speed_dkph <= SPEED_STOP_DKPH) {
+condition outcomes covered 2/2
+       23:   23:        result = 1U;
+        -:   24:    } else {
+        -:   25:    }
+        -:   26:
+      110:   27:    return result;
+        -:   28:}
+        -:   29:
+       99:   30:static uint8_t flag_speed_gt_regen(const Inputs_t *in)
         -:   31:{
-       11:   32:    Mode_t next = MODE_EV;
+       99:   32:    uint8_t result = 0U;
         -:   33:
-        -:   34:    /* EV -> REGENB */
-       11:   35:    if ((in->speed >  SPEED_REGEN) &&
-condition outcomes covered 4/4
-        6:   36:        (in->P_dem <= PDEM_REGEN)) {
-        1:   37:        next = MODE_REGENB;
-        -:   38:    }
-        -:   39:    /* EV -> START */
-       10:   40:    else if ((in->speed > SPEED_EV_MAX) ||
-condition outcomes covered 6/6
-        9:   41:             (in->P_dem >= PDEM_HYB_IN) ||
-        8:   42:             (in->SOC   <  SOC_EV_OUT)) {
-        3:   43:        next = MODE_START;
-        -:   44:    }
-        -:   45:    /* EV -> STANDSTILL */
-        7:   46:    else if ((in->speed <= SPEED_STOP)     &&
-condition outcomes covered 6/6
-        3:   47:             (in->P_dem <= PDEM_STOP_HIGH) &&
-        2:   48:             (in->P_dem >= PDEM_STOP_LOW)) {
-        1:   49:        next = MODE_STANDSTILL;
-        -:   50:    }
-        -:   51:    else {
-        -:   52:    }
+       99:   34:    if (in->speed_dkph > SPEED_REGEN_DKPH) {
+condition outcomes covered 2/2
+       71:   35:        result = 1U;
+        -:   36:    } else {
+        -:   37:    }
+        -:   38:
+       99:   39:    return result;
+        -:   40:}
+        -:   41:
+       46:   42:static uint8_t flag_speed_gt_ev_max(const Inputs_t *in)
+        -:   43:{
+       46:   44:    uint8_t result = 0U;
+        -:   45:
+       46:   46:    if (in->speed_dkph > SPEED_EV_MAX_DKPH) {
+condition outcomes covered 2/2
+        5:   47:        result = 1U;
+        -:   48:    } else {
+        -:   49:    }
+        -:   50:
+       46:   51:    return result;
+        -:   52:}
         -:   53:
-       11:   54:    return next;
-        -:   55:}
-        -:   56:
+       96:   54:static uint8_t flag_speed_le_ev_max(const Inputs_t *in)
+        -:   55:{
+       96:   56:    uint8_t result = 0U;
         -:   57:
-       11:   58:static Mode_t handle_regenb(const Inputs_t *in)
-        -:   59:{
-       11:   60:    Mode_t next = MODE_REGENB;
-        -:   61:
-        -:   62:    /* REGENB -> START */
-       11:   63:    if (((in->speed > SPEED_EV_MAX) && (in->P_dem >= PDEM_STOP_LOW)) ||
-condition outcomes covered 5/6
-condition  1 not covered (false)
-       10:   64:        (in->SOC < SOC_EV_OUT)) {
-        2:   65:        next = MODE_START;
-        -:   66:    }
-        -:   67:    /* REGENB -> STANDSTILL */
-        9:   68:    else if ((in->speed <= SPEED_STOP)     &&
-condition outcomes covered 6/6
-        4:   69:             (in->P_dem <= PDEM_STOP_HIGH) &&
-        3:   70:             (in->P_dem >= PDEM_STOP_LOW)) {
-        2:   71:        next = MODE_STANDSTILL;
-        -:   72:    }
-        -:   73:    /* REGENB -> EV */
-        7:   74:    else if ((in->P_dem >= PDEM_STOP_LOW) &&
-condition outcomes covered 6/8
-condition  2 not covered (false)
-condition  3 not covered (false)
-        3:   75:             (in->speed > SPEED_STOP) &&
-        2:   76:             (in->speed <= SPEED_EV_MAX) &&
-        2:   77:             (in->SOC >= SOC_EV_OUT)) {
-        2:   78:        next = MODE_EV;
-        -:   79:    }
-        -:   80:    else {
-        -:   81:    }
-        -:   82:
-       11:   83:    return next;
-        -:   84:}
-        -:   85:
-        -:   86:/* Common exit from Motion_mode_ICE (shared by START, ICE, HYBRID). */
-       88:   87:static Mode_t motion_ice_common_exit(const Inputs_t *in, Mode_t current_in_block)
-        -:   88:{
-       88:   89:    Mode_t next = current_in_block;
-        -:   90:
-       88:   91:    if ((in->wEng > ENG_ON) &&
-condition outcomes covered 6/6
-       65:   92:        (in->speed > SPEED_REGEN) &&
-       51:   93:        (in->P_dem <= PDEM_REGEN)) {
-        6:   94:        next = MODE_REGENB;
-       82:   95:    } else if ((in->wEng > ENG_ON) &&
-condition outcomes covered 12/12
-       59:   96:               (in->P_dem <= PDEM_HYB_OUT) &&
-       56:   97:               (in->P_dem >= PDEM_STOP_LOW) &&
-       46:   98:               (in->speed > SPEED_STOP) &&
-       36:   99:               (in->speed <= SPEED_EV_MAX) &&
-       20:  100:               (in->SOC >= SOC_EV_IN)) {
-        8:  101:        next = MODE_EV;
-       74:  102:    } else if ((in->speed <= SPEED_STOP) &&
-condition outcomes covered 6/6
-       16:  103:               (in->P_dem <= PDEM_STOP_HIGH) &&
-       10:  104:               (in->P_dem >= PDEM_STOP_LOW)) {
-        7:  105:        next = MODE_STANDSTILL;
-        -:  106:    } else {
-        -:  107:    }
-        -:  108:
-       88:  109:    return next;
-        -:  110:}
-        -:  111:
-        -:  112:/* Reset to START when engine stalls (checked before ICE <-> HYBRID). */
-       43:  113:static Mode_t internal_motion_ice_reset(const Inputs_t *in, Mode_t current_in_block)
-        -:  114:{
-       43:  115:    Mode_t next = current_in_block;
-        -:  116:
-       43:  117:    if (in->wEng <= ENG_OFF) {
+       96:   58:    if (in->speed_dkph <= SPEED_EV_MAX_DKPH) {
 condition outcomes covered 2/2
-        4:  118:        next = MODE_START;
-        -:  119:    } else {
-        -:  120:    }
-        -:  121:
-       43:  122:    return next;
-        -:  123:}
-        -:  124:
+       75:   59:        result = 1U;
+        -:   60:    } else {
+        -:   61:    }
+        -:   62:
+       96:   63:    return result;
+        -:   64:}
+        -:   65:
+       99:   66:static uint8_t flag_p_dem_le_regen(const Inputs_t *in)
+        -:   67:{
+       99:   68:    uint8_t result = 0U;
+        -:   69:
+       99:   70:    if (in->p_dem_dkw <= PDEM_REGEN_DKW) {
+condition outcomes covered 2/2
+       16:   71:        result = 1U;
+        -:   72:    } else {
+        -:   73:    }
+        -:   74:
+       99:   75:    return result;
+        -:   76:}
+        -:   77:
+       11:   78:static uint8_t flag_p_dem_ge_hyb_in(const Inputs_t *in)
+        -:   79:{
+       11:   80:    uint8_t result = 0U;
+        -:   81:
+       11:   82:    if (in->p_dem_dkw >= PDEM_HYB_IN_DKW) {
+condition outcomes covered 2/2
+        1:   83:        result = 1U;
+        -:   84:    } else {
+        -:   85:    }
+        -:   86:
+       11:   87:    return result;
+        -:   88:}
+        -:   89:
+       88:   90:static uint8_t flag_p_dem_le_hyb_out(const Inputs_t *in)
+        -:   91:{
+       88:   92:    uint8_t result = 0U;
+        -:   93:
+       88:   94:    if (in->p_dem_dkw <= PDEM_HYB_OUT_DKW) {
+condition outcomes covered 2/2
+       85:   95:        result = 1U;
+        -:   96:    } else {
+        -:   97:    }
+        -:   98:
+       88:   99:    return result;
+        -:  100:}
+        -:  101:
+      110:  102:static uint8_t flag_p_dem_le_stop_high(const Inputs_t *in)
+        -:  103:{
+      110:  104:    uint8_t result = 0U;
+        -:  105:
+      110:  106:    if (in->p_dem_dkw <= PDEM_STOP_HIGH_DKW) {
+condition outcomes covered 2/2
+       52:  107:        result = 1U;
+        -:  108:    } else {
+        -:  109:    }
+        -:  110:
+      110:  111:    return result;
+        -:  112:}
+        -:  113:
+      220:  114:static uint8_t flag_p_dem_ge_stop_low(const Inputs_t *in)
+        -:  115:{
+      220:  116:    uint8_t result = 0U;
+        -:  117:
+      220:  118:    if (in->p_dem_dkw >= PDEM_STOP_LOW_DKW) {
+condition outcomes covered 2/2
+      155:  119:        result = 1U;
+        -:  120:    } else {
+        -:  121:    }
+        -:  122:
+      220:  123:    return result;
+        -:  124:}
         -:  125:
-       30:  126:static Mode_t handle_start(const Inputs_t *in)
+       44:  126:static uint8_t flag_p_dem_ge_hyb_mid(const Inputs_t *in)
         -:  127:{
-        -:  128:    Mode_t next;
+       44:  128:    uint8_t result = 0U;
         -:  129:
-       30:  130:    next = motion_ice_common_exit(in, MODE_START);
-        -:  131:
-       30:  132:    if (next == MODE_START) {
+       44:  130:    if (in->p_dem_dkw >= PDEM_HYB_MID_DKW) {
 condition outcomes covered 2/2
-       24:  133:        if ((in->wEng > ENG_ON) &&
-condition outcomes covered 8/8
-       16:  134:            (in->SOC >= SOC_MID) &&
-       12:  135:            ((in->speed > SPEED_EV_MAX) ||
-       10:  136:             (in->P_dem >= PDEM_HYB_MID))) {
-        4:  137:            next = MODE_HYBRID;
-       20:  138:        } else if ((in->wEng > ENG_ON) &&
-condition outcomes covered 5/8
-condition  1 not covered (false)
-condition  2 not covered (false)
-condition  3 not covered (false)
-       12:  139:                   ((in->SOC < SOC_MID) ||
-        8:  140:                    ((in->speed <= SPEED_EV_MAX) &&
-        8:  141:                     (in->P_dem < PDEM_HYB_MID)))) {
-       12:  142:            next = MODE_ICE;
-        -:  143:        } else {
-        -:  144:        }
-        -:  145:    } else {
-        -:  146:    }
-        -:  147:
-       30:  148:    return next;
-        -:  149:}
-        -:  150:
-        -:  151:
-       30:  152:static Mode_t handle_ice(const Inputs_t *in)
-        -:  153:{
-        -:  154:    Mode_t next;
-        -:  155:
-       30:  156:    next = motion_ice_common_exit(in, MODE_ICE);
-        -:  157:
-       30:  158:    if (next == MODE_ICE) {
+       10:  131:        result = 1U;
+        -:  132:    } else {
+        -:  133:    }
+        -:  134:
+       44:  135:    return result;
+        -:  136:}
+        -:  137:
+       19:  138:static uint8_t flag_p_dem_le_hyb_low(const Inputs_t *in)
+        -:  139:{
+       19:  140:    uint8_t result = 0U;
+        -:  141:
+       19:  142:    if (in->p_dem_dkw <= PDEM_HYB_LOW_DKW) {
 condition outcomes covered 2/2
-       22:  159:        next = internal_motion_ice_reset(in, next);
-        -:  160:    } else {
-        -:  161:    }
-        -:  162:
-       30:  163:    if (next == MODE_ICE) {
+       14:  143:        result = 1U;
+        -:  144:    } else {
+        -:  145:    }
+        -:  146:
+       19:  147:    return result;
+        -:  148:}
+        -:  149:
+       96:  150:static uint8_t flag_soc_ge_ev_in(const Inputs_t *in)
+        -:  151:{
+       96:  152:    uint8_t result = 0U;
+        -:  153:
+       96:  154:    if (in->soc_q10000 >= SOC_EV_IN_Q10000) {
 condition outcomes covered 2/2
-       20:  164:        if ((in->P_dem >= PDEM_HYB_MID) &&
-condition outcomes covered 4/4
-        5:  165:            (in->SOC   >= SOC_MID)) {
-        4:  166:            next = MODE_HYBRID;
-        -:  167:        } else {
-        -:  168:        }
-        -:  169:    } else {
-        -:  170:    }
-        -:  171:
-       30:  172:    return next;
-        -:  173:}
-        -:  174:
-        -:  175:
-       28:  176:static Mode_t handle_hybrid(const Inputs_t *in)
-        -:  177:{
-        -:  178:    Mode_t next;
-        -:  179:
-       28:  180:    next = motion_ice_common_exit(in, MODE_HYBRID);
-        -:  181:
-       28:  182:    if (next == MODE_HYBRID) {
+       72:  155:        result = 1U;
+        -:  156:    } else {
+        -:  157:    }
+        -:  158:
+       96:  159:    return result;
+        -:  160:}
+        -:  161:
+       22:  162:static uint8_t flag_soc_lt_ev_out(const Inputs_t *in)
+        -:  163:{
+       22:  164:    uint8_t result = 0U;
+        -:  165:
+       22:  166:    if (in->soc_q10000 < SOC_EV_OUT_Q10000) {
 condition outcomes covered 2/2
-       21:  183:        next = internal_motion_ice_reset(in, next);
-        -:  184:    } else {
-        -:  185:    }
-        -:  186:
-       28:  187:    if (next == MODE_HYBRID) {
+        2:  167:        result = 1U;
+        -:  168:    } else {
+        -:  169:    }
+        -:  170:
+       22:  171:    return result;
+        -:  172:}
+        -:  173:
+       44:  174:static uint8_t flag_soc_ge_mid(const Inputs_t *in)
+        -:  175:{
+       44:  176:    uint8_t result = 0U;
+        -:  177:
+       44:  178:    if (in->soc_q10000 >= SOC_MID_Q10000) {
 condition outcomes covered 2/2
-       19:  188:        if ((in->P_dem <= PDEM_HYB_LOW) ||
-condition outcomes covered 4/4
-        5:  189:            (in->SOC   <  SOC_LOW)) {
-       15:  190:            next = MODE_ICE;
-        -:  191:        } else {
-        -:  192:        }
-        -:  193:    } else {
-        -:  194:    }
-        -:  195:
-       28:  196:    return next;
-        -:  197:}
-        -:  198:
-        -:  199:
-      118:  200:static void write_outputs(Mode_t mode, Outputs_t *out)
-        -:  201:{
-      118:  202:    switch (mode) {
-       13:  203:        case MODE_STANDSTILL:
-       13:  204:            out->Mot_Enable = 0U;
-       13:  205:            out->Gen_Enable = 0U;
-       13:  206:            out->ICE_Enable = 0U;
-       13:  207:            break;
-        -:  208:
-       17:  209:        case MODE_EV:
-       17:  210:            out->Mot_Enable = 1U;
-       17:  211:            out->Gen_Enable = 0U;
-       17:  212:            out->ICE_Enable = 0U;
-       17:  213:            break;
-        -:  214:
-       12:  215:        case MODE_REGENB:
-       12:  216:            out->Mot_Enable = 1U;
-       12:  217:            out->Gen_Enable = 0U;
-       12:  218:            out->ICE_Enable = 0U;
-       12:  219:            break;
-        -:  220:
-       21:  221:        case MODE_START:
-       21:  222:            out->Mot_Enable = 1U;
-       21:  223:            out->Gen_Enable = 1U;
-       21:  224:            out->ICE_Enable = 0U;
-       21:  225:            break;
-        -:  226:
-       43:  227:        case MODE_ICE:
-       43:  228:            out->Mot_Enable = 0U;
-       43:  229:            out->Gen_Enable = 1U;
-       43:  230:            out->ICE_Enable = 1U;
-       43:  231:            break;
-        -:  232:
-       12:  233:        case MODE_HYBRID:
-       12:  234:            out->Mot_Enable = 1U;
-       12:  235:            out->Gen_Enable = 1U;
-       12:  236:            out->ICE_Enable = 1U;
-       12:  237:            break;
-        -:  238:
-    #####:  239:        default:
-    #####:  240:            out->Mot_Enable = 0U;
-    #####:  241:            out->Gen_Enable = 0U;
-    #####:  242:            out->ICE_Enable = 0U;
-    #####:  243:            break;
-        -:  244:    }
-      118:  245:}
-        -:  246:
-        -:  247:/* Public API consumed by test/ and external clients */
-        -:  248:/* cppcheck-suppress misra-c2012-8.7 */
-        -:  249:/* cppcheck-suppress unusedFunction */
-      106:  250:void ModeLogic_Init(State_t *state)
-        -:  251:{
-      106:  252:    if (state != NULL) {
+       38:  179:        result = 1U;
+        -:  180:    } else {
+        -:  181:    }
+        -:  182:
+       44:  183:    return result;
+        -:  184:}
+        -:  185:
+       19:  186:static uint8_t flag_soc_lt_low(const Inputs_t *in)
+        -:  187:{
+       19:  188:    uint8_t result = 0U;
+        -:  189:
+       19:  190:    if (in->soc_q10000 < SOC_LOW_Q10000) {
 condition outcomes covered 2/2
-      101:  253:        state->current_mode = MODE_STANDSTILL;
-        -:  254:    } else {
-        -:  255:    }
-      106:  256:}
-        -:  257:
-        -:  258:/* Public API consumed by test/ and external clients */
-        -:  259:/* cppcheck-suppress misra-c2012-8.7 */
-        -:  260:/* cppcheck-suppress unusedFunction */
-      133:  261:void ModeLogic_Step(State_t *state, const Inputs_t *in, Outputs_t *out)
-        -:  262:{
-      133:  263:    if ((state != NULL) && (in != NULL) && (out != NULL)) {
-condition outcomes covered 6/6
-      118:  264:        Mode_t next = state->current_mode;
-        -:  265:
-      118:  266:        switch (state->current_mode) {
-        8:  267:            case MODE_STANDSTILL:
-        8:  268:                next = handle_standstill(in);
-        8:  269:                break;
-        -:  270:
-       11:  271:            case MODE_EV:
-       11:  272:                next = handle_ev(in);
-       11:  273:                break;
+        1:  191:        result = 1U;
+        -:  192:    } else {
+        -:  193:    }
+        -:  194:
+       19:  195:    return result;
+        -:  196:}
+        -:  197:
+      224:  198:static uint8_t flag_weng_gt_on(const Inputs_t *in)
+        -:  199:{
+      224:  200:    uint8_t result = 0U;
+        -:  201:
+      224:  202:    if (in->weng_rpm > ENG_ON_RPM) {
+condition outcomes covered 2/2
+      162:  203:        result = 1U;
+        -:  204:    } else {
+        -:  205:    }
+        -:  206:
+      224:  207:    return result;
+        -:  208:}
+        -:  209:
+       43:  210:static uint8_t flag_weng_le_off(const Inputs_t *in)
+        -:  211:{
+       43:  212:    uint8_t result = 0U;
+        -:  213:
+       43:  214:    if (in->weng_rpm <= ENG_OFF_RPM) {
+condition outcomes covered 2/2
+        4:  215:        result = 1U;
+        -:  216:    } else {
+        -:  217:    }
+        -:  218:
+       43:  219:    return result;
+        -:  220:}
+        -:  221:
+        8:  222:static uint8_t guard_standstill_to_ev(const Inputs_t *in)
+        -:  223:{
+        8:  224:    const uint8_t speed_gt_stop = flag_speed_gt_stop(in);
+        8:  225:    const uint8_t speed_le_ev_max = flag_speed_le_ev_max(in);
+        8:  226:    const uint8_t soc_ge_ev_in = flag_soc_ge_ev_in(in);
+        -:  227:
+        8:  228:    return (uint8_t)((uint8_t)(speed_gt_stop & speed_le_ev_max) & soc_ge_ev_in);
+        -:  229:}
+        -:  230:
+        8:  231:static uint8_t guard_standstill_to_start(const Inputs_t *in)
+        -:  232:{
+        8:  233:    const uint8_t speed_gt_stop = flag_speed_gt_stop(in);
+        -:  234:
+        8:  235:    return speed_gt_stop;
+        -:  236:}
+        -:  237:
+       99:  238:static uint8_t guard_to_regenb(const Inputs_t *in)
+        -:  239:{
+       99:  240:    const uint8_t speed_gt_regen = flag_speed_gt_regen(in);
+       99:  241:    const uint8_t p_dem_le_regen = flag_p_dem_le_regen(in);
+        -:  242:
+       99:  243:    return (uint8_t)(speed_gt_regen & p_dem_le_regen);
+        -:  244:}
+        -:  245:
+       11:  246:static uint8_t guard_ev_to_start(const Inputs_t *in)
+        -:  247:{
+       11:  248:    const uint8_t speed_gt_ev_max = flag_speed_gt_ev_max(in);
+       11:  249:    const uint8_t p_dem_ge_hyb_in = flag_p_dem_ge_hyb_in(in);
+       11:  250:    const uint8_t soc_lt_ev_out = flag_soc_lt_ev_out(in);
+        -:  251:
+       11:  252:    return (uint8_t)((uint8_t)(speed_gt_ev_max | p_dem_ge_hyb_in) | soc_lt_ev_out);
+        -:  253:}
+        -:  254:
+      110:  255:static uint8_t guard_to_standstill(const Inputs_t *in)
+        -:  256:{
+      110:  257:    const uint8_t speed_le_stop = flag_speed_le_stop(in);
+      110:  258:    const uint8_t p_dem_le_stop_high = flag_p_dem_le_stop_high(in);
+      110:  259:    const uint8_t p_dem_ge_stop_low = flag_p_dem_ge_stop_low(in);
+        -:  260:
+      110:  261:    return (uint8_t)((uint8_t)(speed_le_stop & p_dem_le_stop_high) & p_dem_ge_stop_low);
+        -:  262:}
+        -:  263:
+       11:  264:static uint8_t guard_regenb_to_start(const Inputs_t *in)
+        -:  265:{
+       11:  266:    const uint8_t speed_gt_ev_max = flag_speed_gt_ev_max(in);
+       11:  267:    const uint8_t p_dem_ge_stop_low = flag_p_dem_ge_stop_low(in);
+       11:  268:    const uint8_t soc_lt_ev_out = flag_soc_lt_ev_out(in);
+       11:  269:    const uint8_t high_speed_positive_demand =
+        -:  270:        (uint8_t)(speed_gt_ev_max & p_dem_ge_stop_low);
+        -:  271:
+       11:  272:    return (uint8_t)(high_speed_positive_demand | soc_lt_ev_out);
+        -:  273:}
         -:  274:
-       11:  275:            case MODE_REGENB:
-       11:  276:                next = handle_regenb(in);
-       11:  277:                break;
-        -:  278:
-       30:  279:            case MODE_START:
-       30:  280:                next = handle_start(in);
-       30:  281:                break;
+       11:  275:static uint8_t guard_regenb_to_ev(const Inputs_t *in)
+        -:  276:{
+       11:  277:    const uint8_t p_dem_ge_stop_low = flag_p_dem_ge_stop_low(in);
+       11:  278:    const uint8_t speed_gt_stop = flag_speed_gt_stop(in);
+        -:  279:
+       11:  280:    return (uint8_t)(p_dem_ge_stop_low & speed_gt_stop);
+        -:  281:}
         -:  282:
-       30:  283:            case MODE_ICE:
-       30:  284:                next = handle_ice(in);
-       30:  285:                break;
-        -:  286:
-       28:  287:            case MODE_HYBRID:
-       28:  288:                next = handle_hybrid(in);
-       28:  289:                break;
-        -:  290:
-    #####:  291:            default:
-    #####:  292:                next = MODE_STANDSTILL;
-    #####:  293:                break;
-        -:  294:        }
-        -:  295:
-      118:  296:        state->current_mode = next;
-      118:  297:        write_outputs(next, out);
-        -:  298:    } else {
-        -:  299:    }
-      133:  300:}
+       88:  283:static uint8_t guard_motion_to_ev(const Inputs_t *in)
+        -:  284:{
+       88:  285:    const uint8_t weng_gt_on = flag_weng_gt_on(in);
+       88:  286:    const uint8_t p_dem_le_hyb_out = flag_p_dem_le_hyb_out(in);
+       88:  287:    const uint8_t p_dem_ge_stop_low = flag_p_dem_ge_stop_low(in);
+       88:  288:    const uint8_t speed_gt_stop = flag_speed_gt_stop(in);
+       88:  289:    const uint8_t speed_le_ev_max = flag_speed_le_ev_max(in);
+       88:  290:    const uint8_t soc_ge_ev_in = flag_soc_ge_ev_in(in);
+        -:  291:
+       88:  292:    return (uint8_t)((uint8_t)((uint8_t)((uint8_t)((uint8_t)(weng_gt_on &
+        -:  293:                                                                  p_dem_le_hyb_out) &
+        -:  294:                                                        p_dem_ge_stop_low) &
+        -:  295:                                              speed_gt_stop) &
+        -:  296:                                    speed_le_ev_max) &
+        -:  297:                     soc_ge_ev_in);
+        -:  298:}
+        -:  299:
+       24:  300:static uint8_t guard_start_to_hybrid(const Inputs_t *in)
+        -:  301:{
+       24:  302:    const uint8_t weng_gt_on = flag_weng_gt_on(in);
+       24:  303:    const uint8_t soc_ge_mid = flag_soc_ge_mid(in);
+       24:  304:    const uint8_t speed_gt_ev_max = flag_speed_gt_ev_max(in);
+       24:  305:    const uint8_t p_dem_ge_hyb_mid = flag_p_dem_ge_hyb_mid(in);
+       24:  306:    const uint8_t high_load = (uint8_t)(speed_gt_ev_max | p_dem_ge_hyb_mid);
+        -:  307:
+       24:  308:    return (uint8_t)((uint8_t)(weng_gt_on & soc_ge_mid) & high_load);
+        -:  309:}
+        -:  310:
+       24:  311:static uint8_t guard_start_to_ice(const Inputs_t *in)
+        -:  312:{
+       24:  313:    const uint8_t weng_gt_on = flag_weng_gt_on(in);
+        -:  314:
+       24:  315:    return weng_gt_on;
+        -:  316:}
+        -:  317:
+       20:  318:static uint8_t guard_ice_to_hybrid(const Inputs_t *in)
+        -:  319:{
+       20:  320:    const uint8_t p_dem_ge_hyb_mid = flag_p_dem_ge_hyb_mid(in);
+       20:  321:    const uint8_t soc_ge_mid = flag_soc_ge_mid(in);
+        -:  322:
+       20:  323:    return (uint8_t)(p_dem_ge_hyb_mid & soc_ge_mid);
+        -:  324:}
+        -:  325:
+       19:  326:static uint8_t guard_hybrid_to_ice(const Inputs_t *in)
+        -:  327:{
+       19:  328:    const uint8_t p_dem_le_hyb_low = flag_p_dem_le_hyb_low(in);
+       19:  329:    const uint8_t soc_lt_low = flag_soc_lt_low(in);
+        -:  330:
+       19:  331:    return (uint8_t)(p_dem_le_hyb_low | soc_lt_low);
+        -:  332:}
+        -:  333:
+        -:  334:/* Priority: EV before START. */
+        8:  335:static Mode_t handle_standstill(const Inputs_t *in)
+        -:  336:{
+        8:  337:    Mode_t next = MODE_STANDSTILL;
+        8:  338:    const uint8_t to_ev = guard_standstill_to_ev(in);
+        8:  339:    const uint8_t to_start = guard_standstill_to_start(in);
+        -:  340:
+        8:  341:    if (to_ev != 0U) {
+condition outcomes covered 2/2
+        1:  342:        next = MODE_EV;
+        7:  343:    } else if (to_start != 0U) {
+condition outcomes covered 2/2
+        4:  344:        next = MODE_START;
+        -:  345:    } else {
+        -:  346:    }
+        -:  347:
+        8:  348:    return next;
+        -:  349:}
+        -:  350:
+        -:  351:/* EV entry: SOC_EV_IN, exit: SOC_EV_OUT -- hysteresis gap. */
+       11:  352:static Mode_t handle_ev(const Inputs_t *in)
+        -:  353:{
+       11:  354:    Mode_t next = MODE_EV;
+       11:  355:    const uint8_t to_regenb = guard_to_regenb(in);
+       11:  356:    const uint8_t to_start = guard_ev_to_start(in);
+       11:  357:    const uint8_t to_standstill = guard_to_standstill(in);
+        -:  358:
+       11:  359:    if (to_regenb != 0U) {
+condition outcomes covered 2/2
+        1:  360:        next = MODE_REGENB;
+       10:  361:    } else if (to_start != 0U) {
+condition outcomes covered 2/2
+        3:  362:        next = MODE_START;
+        7:  363:    } else if (to_standstill != 0U) {
+condition outcomes covered 2/2
+        1:  364:        next = MODE_STANDSTILL;
+        -:  365:    } else {
+        -:  366:    }
+        -:  367:
+       11:  368:    return next;
+        -:  369:}
+        -:  370:
+       11:  371:static Mode_t handle_regenb(const Inputs_t *in)
+        -:  372:{
+       11:  373:    Mode_t next = MODE_REGENB;
+       11:  374:    const uint8_t to_start = guard_regenb_to_start(in);
+       11:  375:    const uint8_t to_standstill = guard_to_standstill(in);
+       11:  376:    const uint8_t to_ev = guard_regenb_to_ev(in);
+        -:  377:
+       11:  378:    if (to_start != 0U) {
+condition outcomes covered 2/2
+        2:  379:        next = MODE_START;
+        9:  380:    } else if (to_standstill != 0U) {
+condition outcomes covered 2/2
+        2:  381:        next = MODE_STANDSTILL;
+        7:  382:    } else if (to_ev != 0U) {
+condition outcomes covered 2/2
+        2:  383:        next = MODE_EV;
+        -:  384:    } else {
+        -:  385:    }
+        -:  386:
+       11:  387:    return next;
+        -:  388:}
+        -:  389:
+        -:  390:/* Common exit from Motion_mode_ICE (shared by START, ICE, HYBRID). */
+       88:  391:static Mode_t motion_ice_common_exit(const Inputs_t *in, Mode_t current_in_block)
+        -:  392:{
+       88:  393:    Mode_t next = current_in_block;
+       88:  394:    const uint8_t to_regenb = (uint8_t)(flag_weng_gt_on(in) & guard_to_regenb(in));
+       88:  395:    const uint8_t to_ev = guard_motion_to_ev(in);
+       88:  396:    const uint8_t to_standstill = guard_to_standstill(in);
+        -:  397:
+       88:  398:    if (to_regenb != 0U) {
+condition outcomes covered 2/2
+        6:  399:        next = MODE_REGENB;
+       82:  400:    } else if (to_ev != 0U) {
+condition outcomes covered 2/2
+        8:  401:        next = MODE_EV;
+       74:  402:    } else if (to_standstill != 0U) {
+condition outcomes covered 2/2
+        7:  403:        next = MODE_STANDSTILL;
+        -:  404:    } else {
+        -:  405:    }
+        -:  406:
+       88:  407:    return next;
+        -:  408:}
+        -:  409:
+        -:  410:/* Reset to START when engine stalls (checked before ICE <-> HYBRID). */
+       43:  411:static Mode_t internal_motion_ice_reset(const Inputs_t *in, Mode_t current_in_block)
+        -:  412:{
+       43:  413:    Mode_t next = current_in_block;
+        -:  414:
+       43:  415:    if (flag_weng_le_off(in) != 0U) {
+condition outcomes covered 2/2
+        4:  416:        next = MODE_START;
+        -:  417:    } else {
+        -:  418:    }
+        -:  419:
+       43:  420:    return next;
+        -:  421:}
+        -:  422:
+       30:  423:static Mode_t handle_start(const Inputs_t *in)
+        -:  424:{
+        -:  425:    Mode_t next;
+        -:  426:
+       30:  427:    next = motion_ice_common_exit(in, MODE_START);
+        -:  428:
+       30:  429:    if (next == MODE_START) {
+condition outcomes covered 2/2
+       24:  430:        const uint8_t to_hybrid = guard_start_to_hybrid(in);
+       24:  431:        const uint8_t to_ice = guard_start_to_ice(in);
+        -:  432:
+       24:  433:        if (to_hybrid != 0U) {
+condition outcomes covered 2/2
+        4:  434:            next = MODE_HYBRID;
+       20:  435:        } else if (to_ice != 0U) {
+condition outcomes covered 2/2
+       12:  436:            next = MODE_ICE;
+        -:  437:        } else {
+        -:  438:        }
+        -:  439:    } else {
+        -:  440:    }
+        -:  441:
+       30:  442:    return next;
+        -:  443:}
+        -:  444:
+       30:  445:static Mode_t handle_ice(const Inputs_t *in)
+        -:  446:{
+        -:  447:    Mode_t next;
+        -:  448:
+       30:  449:    next = motion_ice_common_exit(in, MODE_ICE);
+        -:  450:
+       30:  451:    if (next == MODE_ICE) {
+condition outcomes covered 2/2
+       22:  452:        next = internal_motion_ice_reset(in, next);
+        -:  453:    } else {
+        -:  454:    }
+        -:  455:
+       30:  456:    if (next == MODE_ICE) {
+condition outcomes covered 2/2
+       20:  457:        if (guard_ice_to_hybrid(in) != 0U) {
+condition outcomes covered 2/2
+        4:  458:            next = MODE_HYBRID;
+        -:  459:        } else {
+        -:  460:        }
+        -:  461:    } else {
+        -:  462:    }
+        -:  463:
+       30:  464:    return next;
+        -:  465:}
+        -:  466:
+       28:  467:static Mode_t handle_hybrid(const Inputs_t *in)
+        -:  468:{
+        -:  469:    Mode_t next;
+        -:  470:
+       28:  471:    next = motion_ice_common_exit(in, MODE_HYBRID);
+        -:  472:
+       28:  473:    if (next == MODE_HYBRID) {
+condition outcomes covered 2/2
+       21:  474:        next = internal_motion_ice_reset(in, next);
+        -:  475:    } else {
+        -:  476:    }
+        -:  477:
+       28:  478:    if (next == MODE_HYBRID) {
+condition outcomes covered 2/2
+       19:  479:        if (guard_hybrid_to_ice(in) != 0U) {
+condition outcomes covered 2/2
+       15:  480:            next = MODE_ICE;
+        -:  481:        } else {
+        -:  482:        }
+        -:  483:    } else {
+        -:  484:    }
+        -:  485:
+       28:  486:    return next;
+        -:  487:}
+        -:  488:
+      118:  489:static void write_outputs(Mode_t mode, Outputs_t *out)
+        -:  490:{
+      118:  491:    switch (mode) {
+       13:  492:        case MODE_STANDSTILL:
+       13:  493:            out->Mot_Enable = 0U;
+       13:  494:            out->Gen_Enable = 0U;
+       13:  495:            out->ICE_Enable = 0U;
+       13:  496:            break;
+        -:  497:
+       17:  498:        case MODE_EV:
+       17:  499:            out->Mot_Enable = 1U;
+       17:  500:            out->Gen_Enable = 0U;
+       17:  501:            out->ICE_Enable = 0U;
+       17:  502:            break;
+        -:  503:
+       12:  504:        case MODE_REGENB:
+       12:  505:            out->Mot_Enable = 1U;
+       12:  506:            out->Gen_Enable = 0U;
+       12:  507:            out->ICE_Enable = 0U;
+       12:  508:            break;
+        -:  509:
+       21:  510:        case MODE_START:
+       21:  511:            out->Mot_Enable = 1U;
+       21:  512:            out->Gen_Enable = 1U;
+       21:  513:            out->ICE_Enable = 0U;
+       21:  514:            break;
+        -:  515:
+       43:  516:        case MODE_ICE:
+       43:  517:            out->Mot_Enable = 0U;
+       43:  518:            out->Gen_Enable = 1U;
+       43:  519:            out->ICE_Enable = 1U;
+       43:  520:            break;
+        -:  521:
+       12:  522:        case MODE_HYBRID:
+       12:  523:            out->Mot_Enable = 1U;
+       12:  524:            out->Gen_Enable = 1U;
+       12:  525:            out->ICE_Enable = 1U;
+       12:  526:            break;
+        -:  527:
+    #####:  528:        default:
+    #####:  529:            out->Mot_Enable = 0U;
+    #####:  530:            out->Gen_Enable = 0U;
+    #####:  531:            out->ICE_Enable = 0U;
+    #####:  532:            break;
+        -:  533:    }
+      118:  534:}
+        -:  535:
+        -:  536:/* Public API consumed by test/ and external clients */
+        -:  537:/* cppcheck-suppress misra-c2012-8.7 */
+        -:  538:/* cppcheck-suppress unusedFunction */
+      106:  539:void ModeLogic_Init(State_t *state)
+        -:  540:{
+      106:  541:    if (state != NULL) {
+condition outcomes covered 2/2
+      101:  542:        state->current_mode = MODE_STANDSTILL;
+        -:  543:    } else {
+        -:  544:    }
+      106:  545:}
+        -:  546:
+        -:  547:/* Public API consumed by test/ and external clients */
+        -:  548:/* cppcheck-suppress misra-c2012-8.7 */
+        -:  549:/* cppcheck-suppress unusedFunction */
+      133:  550:void ModeLogic_Step(State_t *state, const Inputs_t *in, Outputs_t *out)
+        -:  551:{
+      133:  552:    if ((state != NULL) && (in != NULL) && (out != NULL)) {
+condition outcomes covered 6/6
+      118:  553:        Mode_t next = state->current_mode;
+        -:  554:
+      118:  555:        switch (state->current_mode) {
+        8:  556:            case MODE_STANDSTILL:
+        8:  557:                next = handle_standstill(in);
+        8:  558:                break;
+        -:  559:
+       11:  560:            case MODE_EV:
+       11:  561:                next = handle_ev(in);
+       11:  562:                break;
+        -:  563:
+       11:  564:            case MODE_REGENB:
+       11:  565:                next = handle_regenb(in);
+       11:  566:                break;
+        -:  567:
+       30:  568:            case MODE_START:
+       30:  569:                next = handle_start(in);
+       30:  570:                break;
+        -:  571:
+       30:  572:            case MODE_ICE:
+       30:  573:                next = handle_ice(in);
+       30:  574:                break;
+        -:  575:
+       28:  576:            case MODE_HYBRID:
+       28:  577:                next = handle_hybrid(in);
+       28:  578:                break;
+        -:  579:
+    #####:  580:            default:
+    #####:  581:                next = MODE_STANDSTILL;
+    #####:  582:                break;
+        -:  583:        }
+        -:  584:
+      118:  585:        state->current_mode = next;
+      118:  586:        write_outputs(next, out);
+        -:  587:    } else {
+        -:  588:    }
+      133:  589:}

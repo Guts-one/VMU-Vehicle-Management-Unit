@@ -11,6 +11,14 @@ BUILD="$REPORT_DIR/build_cov"
 COV_DIR="$REPORT_DIR/html"
 INFO="$REPORT_DIR/coverage.info"
 CC=gcc-11
+UNITY_SRC_DIR="${UNITY_SRC_DIR:-unity/src}"
+if [ ! -f "$UNITY_SRC_DIR/unity.c" ] && [ -f "/home/vmu/unity/src/unity.c" ]; then
+    UNITY_SRC_DIR="/home/vmu/unity/src"
+fi
+if [ ! -f "$UNITY_SRC_DIR/unity.c" ]; then
+    echo "Unity source not found. Set UNITY_SRC_DIR to the directory containing unity.c." >&2
+    exit 1
+fi
 
 rm -rf "$BUILD" "$COV_DIR" "$INFO"
 mkdir -p "$BUILD" "$REPORT_DIR"
@@ -37,7 +45,7 @@ gen_runner() {
 CFLAGS=(-std=c99 -Wall -Wextra -O0 -g
         --coverage -fprofile-arcs -ftest-coverage
         -fprofile-update=atomic
-        -I inc -I unity/src)
+        -I inc -I "$UNITY_SRC_DIR")
 
 # Compile each test file separately because setUp/tearDown collide.
 for tf in test/*.c; do
@@ -50,7 +58,7 @@ for tf in test/*.c; do
     # but reuse the same gcno/gcda layout so counters accumulate across runs.
     "$CC" "${CFLAGS[@]}" \
         "$tf" "$runner" \
-        unity/src/unity.c \
+        "$UNITY_SRC_DIR/unity.c" \
         src/mode_logic_team.c \
         -o "$bin"
 done

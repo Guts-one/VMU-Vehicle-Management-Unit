@@ -1,0 +1,35 @@
+Native Simulink Coverage - Stateflow MC/DC
+==========================================
+
+Model: HEV_powersplit_adapted
+Harness: mode_logic_native_mcdc_harness
+Covered block: mode_logic_native_mcdc_harness/Mode Logic
+Stimulus rows: 265
+
+Decision coverage raw: [44 44]
+Condition coverage raw: [78 78]
+MC/DC coverage raw: [39 39]
+
+Stability check: PASS
+Stability cases: 6
+Stability max output toggles after settle: 0
+
+Decision details:
+           isFiltered: 0
+    justifiedCoverage: 0
+          isJustified: 0
+      filterRationale: ''
+
+
+
+Condition details:
+           isFiltered: 0
+      filterRationale: ''
+    justifiedCoverage: 0
+          isJustified: 0
+            condition: []
+
+
+
+MC/DC details:
+

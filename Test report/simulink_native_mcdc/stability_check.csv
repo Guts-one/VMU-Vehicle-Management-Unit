@@ -1,0 +1,7 @@
+scenario,MotToggles,GenToggles,ICEToggles,PostSettleToggles
+standstill_hold,0,0,0,0
+ev_hold,0,0,0,0
+regenb_hold,0,0,0,0
+start_hold,0,0,0,0
+ice_hold,0,0,0,0
+hybrid_hold,0,0,0,0

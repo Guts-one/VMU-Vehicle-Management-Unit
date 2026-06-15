@@ -1,169 +1,142 @@
-# Test Reports — `mode_logic_team.c`
+# Test Reports - `mode_logic_team.c`
 
-This folder holds the coverage artifacts generated against `src/mode_logic_team.c`
-using the Unity tests under `test/`. Three independent toolchains are exercised:
+This folder holds coverage and regression artifacts generated against
+`src/mode_logic_team.c` using the Unity tests under `test/`.
 
-- **branch coverage** with `gcc-11` + `lcov 1.14`
-- **native MC/DC** (Modified Condition / Decision Coverage) with `gcc-14`
-  (`-fcondition-coverage`) + `gcov-14 --conditions`
-- **static MC/DC tree-likeness check** with `mcdc-checker` (Python tool,
-  built on libclang-19)
+## Headline Numbers
 
-## Headline numbers (current state of the repo)
+| Metric | Value | Source |
+|---|---:|---|
+| Unity tests | 141 / 0 failures | 5 binaries combined |
+| Functions | 100.00 % (41 / 41) | `lcov` |
+| Lines | 97.28 % (286 / 294) | `gcov-14` |
+| Branches | 98.00 % (98 / 100) | `lcov` branch coverage |
+| C MC/DC condition outcomes | 100.00 % (86 / 86) | `gcov-14 --conditions` |
+| Stateflow native MC/DC | 100.00 % (39 / 39) | Simulink Coverage |
+| Stateflow decision/condition | 100.00 % / 100.00 % | Simulink Coverage |
+| Stateflow stability | PASS | 6 hold scenarios |
+| Simulink↔C equivalence | 265 / 265 rows match | full MC/DC stimulus replay |
+| Static MC/DC issues | 0 | `mcdc-checker` |
 
-| Metric                       | Value             | Source                     |
-|------------------------------|-------------------|----------------------------|
-| Unity tests                  | 141 / 0 failures  | 5 binaries combined        |
-| Functions                    | 100 % (11 / 11)   | `lcov`                     |
-| Lines                        | 95.15 % (157/165) | `gcov-14`                  |
-| Branches                     | 93.8 % (122/130)  | `lcov` (lcov_branch_coverage) |
-| **MC/DC condition outcomes** | **93.10 % (108/116)** | `gcov-14 --conditions` |
-| Static MC/DC issues          | 1 (BDD non tree-like at line 63) | `mcdc-checker` |
+No C or Stateflow MC/DC outcome remains uncovered. The two lcov branch misses
+are defensive `default` paths and are not MC/DC conditions.
 
-The 8 uncovered MC/DC outcomes are **structurally unreachable** — see
-`MCDC_matrix.md` for the per-decision analysis.
-
-## Folder layout
+## Folder Layout
 
 ```text
 Test report/
-|-- README.md                         (this file: tools, how-to, layout)
-|-- summary.txt                       (curated top-level coverage summary)
-|-- MCDC_matrix.md                    (tests <-> requirements, per-decision MC/DC)
-|-- branch_coverage_lcov/             (lcov 1.14 output, gcc-11)
-|   |-- coverage.info                 raw .info tracefile
-|   |-- html/index.html               browsable HTML report
-|   `-- build_cov/                    generated branch-coverage build products
-|-- mcdc_native_gcov14/               (GCC 14 -fcondition-coverage output)
-|   |-- mode_logic_team.c.gcov        annotated source with MC/DC marks
-|   |-- mode_logic_team.gcov.txt      stdout-form annotated MC/DC report
-|   |-- summary.txt                   gcov-14 one-run coverage summary
-|   |-- gcov.stderr                   gcov-14 stderr from report generation
-|   `-- build_mcdc/                   generated native MC/DC build products
-|-- mcdc_static_checker/              (static BDD analysis)
-|   |-- output.txt                    mcdc-checker stdout
-|   `-- report.json                   Code-Climate-style issues file
+|-- README.md
+|-- summary.txt
+|-- MCDC_matrix.md
+|-- simulink_c_equivalence_summary.txt
+|-- c_full_stimulus_equivalence.csv
+|-- simulink_c_regression_summary.txt
+|-- c_fixed_point_regression_outputs.csv
+|-- simulink_regression_outputs.csv
+|-- simulink_native_mcdc/
+|   |-- index.html
+|   |-- summary.txt
+|   |-- stimulus_and_outputs.csv
+|   |-- stability_check.csv
+|   `-- coverage_data.mat
+|-- branch_coverage_lcov/
+|   |-- coverage.info
+|   |-- html/index.html
+|   `-- build_cov/
+|-- mcdc_native_gcov14/
+|   |-- mode_logic_team.c.gcov
+|   |-- mode_logic_team.gcov.txt
+|   |-- summary.txt
+|   |-- gcov.stderr
+|   `-- build_mcdc/
+`-- mcdc_static_checker/
+    |-- output.txt
+    `-- report.json
 ```
 
-## Tools used and what they actually measure
+## Tools
 
-| Tool | Version | Metric | Where the data lives |
-|---|---|---|---|
-| `gcc-11` + `--coverage -fprofile-arcs -ftest-coverage` | 11.4.0 (Ubuntu 22.04) | Lines + branches | `branch_coverage_lcov/coverage.info` |
-| `lcov` | 1.14 | Aggregates `.gcda` from all 5 test binaries; `--rc lcov_branch_coverage=1` enables per-branch info | `branch_coverage_lcov/html/index.html` |
-| `gcc-14` + `-fcondition-coverage` | 14.3.0 (`ppa:ubuntu-toolchain-r/test`) | Modified Condition / Decision Coverage instrumentation | `mcdc_native_gcov14/build_mcdc/*.gcda` |
-| `gcov-14 --conditions` | 14.3.0 | Decodes per-condition T/F outcome coverage from `.gcda` | `mcdc_native_gcov14/mode_logic_team.c.gcov`, `mcdc_native_gcov14/mode_logic_team.gcov.txt`, `mcdc_native_gcov14/summary.txt` |
-| `mcdc-checker` | from Codethink/`mcdc-checker` (libclang-19) | Static check: is each decision's BDD tree-like? (necessary precondition for unique-cause MC/DC) | `mcdc_static_checker/report.json` |
-| Unity | upstream `master` (vendored under `unity/`) | Test framework | `test/*.c` |
+| Tool | Version / source | Purpose |
+|---|---|---|
+| `gcc-11` | Ubuntu 22.04 | Branch/line instrumentation for lcov |
+| `lcov` | 1.14 | Branch/line aggregation and HTML report |
+| `gcc-14` | 14.3.0 | Native condition coverage instrumentation |
+| `gcov-14 --conditions` | 14.3.0 | MC/DC condition-outcome decoding |
+| `mcdc-checker` | libclang-19 backend | Static BDD tree-likeness check |
+| Unity | `unity/src` or `UNITY_SRC_DIR` | Unit-test framework |
+| MATLAB/Simulink Coverage | R2026a | Native Stateflow MC/DC and regression simulation |
 
-> **Why two GCC versions?**
-> Native MC/DC (`-fcondition-coverage`) only landed in GCC 14. The system
-> compiler (gcc-11) is still used for plain branch coverage because lcov 1.14
-> doesn't yet understand the GCC-14 condition-coverage `.gcda` extensions.
+## Regeneration Flow
 
-## How to regenerate the reports
-
-The branch and native MC/DC flows are driven by self-contained scripts at the repo root.
-
-> The supported order is: **(1) `run_branch_coverage.sh` → (2) `run_mcdc_native.sh` →
-> (3) regenerate the static checker report if needed**.
-> The two scripts now write their generated outputs directly into `Test report/`.
-
-### 0. Prerequisites (one-time)
-
-```bash
-# branch coverage / gcc-11
-sudo apt install -y lcov gcc-11
-
-# native MC/DC: GCC 14 from the ubuntu-toolchain-r PPA
-sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-sudo apt update
-sudo apt install -y gcc-14
-
-# static MC/DC: libclang-19 + mcdc-checker
-sudo apt install -y libclang-19-dev
-# (mcdc-checker installed as a Python tool in /usr/local/bin)
-sudo ln -sf /usr/lib/llvm-19/lib/libclang-19.so /usr/lib/libclang.so
-sudo ldconfig
-
-# Unity (vendored): the coverage scripts expect ./unity/src/*; if missing:
-mkdir -p unity/src
-curl -sSL -o unity/src/unity.c           https://raw.githubusercontent.com/ThrowTheSwitch/Unity/master/src/unity.c
-curl -sSL -o unity/src/unity.h           https://raw.githubusercontent.com/ThrowTheSwitch/Unity/master/src/unity.h
-curl -sSL -o unity/src/unity_internals.h https://raw.githubusercontent.com/ThrowTheSwitch/Unity/master/src/unity_internals.h
-```
-
-### 1. Branch coverage (`run_branch_coverage.sh`)
+Run from the repository root in WSL Ubuntu 22.04:
 
 ```bash
 ./run_branch_coverage.sh
-```
-
-The script:
-1. compiles each `test/*.c` into its own binary (each file defines its own
-   `setUp`/`tearDown` so they cannot share a process) with
-   `--coverage -fprofile-arcs -ftest-coverage -fprofile-update=atomic`,
-2. runs all 5 binaries; each binary writes its own `*-mode_logic_team.gcda`
-   under `branch_coverage_lcov/build_cov/`,
-3. aggregates those files with `lcov --rc lcov_branch_coverage=1` and extracts
-   only `src/mode_logic_team.c`,
-4. emits `branch_coverage_lcov/coverage.info` and `branch_coverage_lcov/html/`.
-
-### 2. Native MC/DC (`run_mcdc_native.sh`)
-
-```bash
 ./run_mcdc_native.sh
-```
+./run_simulink_c_equivalence.sh
 
-The script:
-1. compiles `mode_logic_team.c` **once** with
-   `gcc-14 -fcondition-coverage -fprofile-update=atomic -O0 -g`
-   (so a single `.gcno`/`.gcda` accumulates counters from every test binary),
-2. compiles each test source file separately and links each against the shared
-   `mode_logic_team.o` and `unity.o`,
-3. runs each binary, then `gcov-14 --conditions` reads the merged `.gcda` and
-   writes `mode_logic_team.c.gcov`, `mode_logic_team.gcov.txt`, and `summary.txt` under `mcdc_native_gcov14/`.
-
-### 3. Static MC/DC tree-likeness (`mcdc-checker`)
-
-```bash
 LIBCLANG_PATH=/usr/lib/llvm-19/lib \
     mcdc-checker src/mode_logic_team.c -I inc \
     -j "Test report/mcdc_static_checker/report.json" \
-    > "Test report/mcdc_static_checker/output.txt" 2>&1 || true
+    > "Test report/mcdc_static_checker/output.txt" 2>&1
 ```
 
-This is a **static** check: it walks the AST of each Boolean decision and
-checks whether the resulting BDD is tree-like. Tree-likeness is a necessary
-precondition for unique-cause MC/DC; if it isn't tree-like, achieving
-unique-cause MC/DC may be impossible without refactoring the decision.
-The `|| true` is intentional here because this repo currently has one known
-non-tree-like decision, so `mcdc-checker` reports the expected issue with a
-non-zero exit code while still producing the report files.
+If the repo does not contain `unity/src/unity.c`, either clone Unity into
+`unity/` or set:
 
-### 4. Output locations
-
-The scripts publish generated artifacts directly into `Test report/`:
-
-```text
-Test report/branch_coverage_lcov/coverage.info
-Test report/branch_coverage_lcov/html/
-Test report/branch_coverage_lcov/build_cov/
-Test report/mcdc_native_gcov14/mode_logic_team.c.gcov
-Test report/mcdc_native_gcov14/mode_logic_team.gcov.txt
-Test report/mcdc_native_gcov14/summary.txt
-Test report/mcdc_native_gcov14/gcov.stderr
-Test report/mcdc_native_gcov14/build_mcdc/
+```bash
+export UNITY_SRC_DIR=/home/vmu/unity/src
 ```
 
-## On adding more tests
+The scripts also auto-detect `/home/vmu/unity/src` when `unity/src` is absent.
 
-A previous pass added 4 candidate tests targeting the missing MC/DC pairs
-(line 18 cond 1, line 63 cond 1, line 74 cond 2, line 138 cond 1). Re-running
-`gcov-14 --conditions` showed the MC/DC percentage **did not change**
-(108/116 either way) because every remaining gap is structurally unreachable
-under GCC 14's unique-cause MC/DC criterion — see `MCDC_matrix.md` §4.
-The tests were therefore reverted: they passed, but did not raise line,
-branch, or MC/DC coverage. Closing the remaining 8 outcomes requires source
-refactors (notably splitting the non-tree-like decision at line 63), not
-more tests.
+## Current MC/DC Status
+
+The fixed-point implementation and Stateflow chart now close the previous
+structural gaps using equivalent lower-priority guards. Conditions that are
+already implied by higher-priority transitions are not repeated in the later
+guard.
+
+The affected logical transitions are:
+
+- `STANDSTILL -> START`
+- `REGENB -> EV`
+- `START -> ICE`
+
+`REGENB -> START` remains decomposed with atomic predicates in C for
+tree-likeness. The current native C metric is 86 / 86 outcomes; the current
+native Simulink Coverage metric is 39 / 39 MC/DC outcomes with no filters or
+justifications.
+
+This preserves the modeled priority and hysteresis while making every condition
+outcome observable to `gcov-14 --conditions`.
+
+## Simulink Regression Evidence
+
+The Stateflow chart `Control/Mode Logic` in
+`Model/HEV_powersplit_adapted/HEV_powersplit_adapted.slx` was updated for the
+same equivalent guard structure where applicable. MATLAB R2026a validation:
+
+- native Simulink Coverage completed with 44 / 44 decisions, 78 / 78
+  condition outcomes, and 39 / 39 MC/DC outcomes;
+- the native coverage report used no filters, exclusions, or justifications;
+- six hold scenarios passed stability checks with zero output toggles after
+  settle;
+- **the full 265-row MC/DC stimulus replayed through the fixed-point C
+  implementation matched the recorded chart outputs row by row (0 mismatches)**
+  — `./run_simulink_c_equivalence.sh`, primary equivalence evidence;
+- a focused 16-row harness simulation also matched the fixed-point C outputs
+  for `Mot_Enable`, `Gen_Enable`, and `ICE_Enable` (historical evidence,
+  superseded by the 265-row replay).
+
+The equivalence and coverage outputs are stored in:
+
+- `simulink_native_mcdc/index.html`
+- `simulink_native_mcdc/summary.txt`
+- `simulink_native_mcdc/stimulus_and_outputs.csv`
+- `simulink_native_mcdc/stability_check.csv`
+- `simulink_c_equivalence_summary.txt`
+- `c_full_stimulus_equivalence.csv`
+- `simulink_regression_outputs.csv`
+- `c_fixed_point_regression_outputs.csv`
+- `simulink_c_regression_summary.txt`

@@ -1,25 +1,50 @@
-mode_logic_team.c — coverage summary
-====================================
+mode_logic_team.c and Stateflow - coverage and validation summary
+=================================================================
 
-Tests:                   141 / 0 failures (5 Unity binaries, 141 RUN_TEST calls)
-Functions:               11 / 11   (100.00 %)
-Lines:                   157 / 165 (95.15 %)
-Branches (lcov):         122 / 130 (93.85 %)
-MC/DC condition outcomes (gcov-14 --conditions):
-                         108 / 116 (93.10 %)
+Tests:
+  Unity:                  141 tests, 0 failures (5 binaries)
+
+C coverage:
+  Functions:              41 / 41  (100.00 %)
+  Lines:                  286 / 294 (97.28 %)
+  Branches (lcov):        98 / 100 (98.00 %)
+  MC/DC condition outcomes:
+                          86 / 86  (100.00 %)
+
+Native Simulink Coverage:
+  Covered chart:          Control/Mode Logic
+  Stimulus rows:          265
+  Decisions:              44 / 44  (100.00 %)
+  Conditions:             78 / 78  (100.00 %)
+  MC/DC:                  39 / 39  (100.00 %)
+  Filters/justifications: none
+
+Stateflow stability:
+  Hold scenarios:         6
+  Result:                 PASS
+  Max output toggles after settle:
+                          0
 
 Static MC/DC check (mcdc-checker):
-  16 decisions, 15 tree-like, 1 correctable non-tree-like
-  - src/mode_logic_team.c:63  REGENB->START  ((A && B) || C)
+  Decisions checked:      1
+  Tree-like decisions:    1
+  Non-tree-like issues:   0
 
-Uncovered MC/DC outcomes (8): all structurally unreachable
-  line  18  cond 1 F   STANDSTILL->START   short-circuit pair-match
-  line  18  cond 2 F   STANDSTILL->START   line-12 catches (T,F,F)
-  line  63  cond 1 F   REGENB->START       BDD non tree-like
-  line  74  cond 2 F   REGENB->EV          short-circuit pair-match
-  line  74  cond 3 F   REGENB->EV          line-63 catches speed>EV_MAX
-  line 138  cond 1 F   START->ICE          short-circuit pair-match
-  line 138  cond 2 F   START->ICE          structural (line 133 forces c3=c4=T)
-  line 138  cond 3 F   START->ICE          line-133 catches speed>EV_MAX
+Static analysis:
+  cppcheck general:       no code defects; public API unusedFunction
+                          false positives suppressed explicitly.
+  MISRA addon:            no violations reported by the cppcheck 2.7
+                          addon on src/mode_logic_team.c.dump.
 
-See MCDC_matrix.md §4 for the per-outcome reachability proofs.
+Simulink/C equivalence:
+  Full-stimulus replay:   265 / 265 Simulink MC/DC stimulus rows matched the
+                          fixed-point C outputs in Mot_Enable, Gen_Enable,
+                          and ICE_Enable (run_simulink_c_equivalence.sh).
+  Focused regression:     16 Simulink rows matched the fixed-point C outputs
+                          (historical, superseded by the 265-row replay).
+
+Notes:
+  The remaining 2 uncovered lcov branches are defensive default paths.
+  Native MC/DC is complete both in Simulink Coverage and gcov-14.
+  All numbers above re-verified on 2026-06-12 (WSL Ubuntu-22.04 gcc-11/gcc-14,
+  MATLAB R2026a, cppcheck 2.7 + upstream 2.7 MISRA addon).
