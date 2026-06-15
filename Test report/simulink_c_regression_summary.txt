@@ -1,0 +1,6 @@
+SIMULINK_C_REGRESSION_MATCH rows=16
+Compared fields: Mot_Enable, Gen_Enable, ICE_Enable
+Stateflow model: Model/HEV_powersplit_adapted/HEV_powersplit_adapted.slx
+C implementation: src/mode_logic_team.c
+Input conversion: physical Simulink values to fixed-point C API scales
+Note: comparison validates observable outputs on the focused 16-row boundary regression.

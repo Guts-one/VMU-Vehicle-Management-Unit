@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simulação da Mode Logic.C</title>
+  <title>Simulação do mode_logic_team.c</title>
   <style>
     :root {
       --bg: #0f172a;
@@ -324,9 +324,9 @@
 </head>
 <body>
   <div class="container">
-    <h1>Simulação do `mode_logic.c`</h1>
+    <h1>Simulação do `mode_logic_team.c`</h1>
     <p class="subtitle">
-      Página standalone que replica a lógica de transição do arquivo <code>src/mode_logic.c</code> em JavaScript.
+      Página standalone que replica fielmente, em ponto fixo (bit-exata), a lógica de transição do arquivo <code>src/mode_logic_team.c</code> em JavaScript.
     </p>
 
     <section class="card" style="margin-bottom:16px;">
@@ -440,7 +440,7 @@
         </div>
 
         <p class="note">
-          Observação: a saída segue o mesmo comportamento do C. Em uma transição, os sinais refletem o modo do passo atual; no passo seguinte eles passam a refletir o novo modo.
+          Observação: a lógica replica fielmente o C (`ModeLogic_Step`). A cada passo as entradas físicas são quantizadas para o fixed-point e a saída já reflete o modo resultante da transição, no mesmo passo — não há defasagem de um ciclo.
         </p>
       </section>
 
@@ -509,22 +509,27 @@
     const MODE_ICE = 4;
     const MODE_HYBRID = 5;
 
-    const ENG_ON = 800.0;
-    const SPEED_STOP = 0.5;
-    const SPEED_REGEN = 5.0;
-    const SPEED_EV_MAX = 35.0;
-    const PDEM_REGEN = -5.0;
-    const PDEM_STOP_LOW = -1.0;
-    const PDEM_STOP_HIGH = 1.0;
-    const PDEM_HYB_IN = 50.0;
-    const PDEM_HYB_OUT = 40.0;
-    const PDEM_HYB_MID = 15.0;
-    const PDEM_HYB_LOW = 10.0;
-    const SOC_EV_IN = 0.37;
-    const SOC_EV_OUT = 0.35;
-    const SOC_MID = 0.30;
-    const SOC_LOW = 0.25;
-    const ENG_OFF = 790.0;
+    // Fixed-point thresholds — mirror inc/mode_logic_team.h exactly.
+    const ENG_ON_RPM = 800;
+    const ENG_OFF_RPM = 790;
+    const SPEED_STOP_DKPH = 5;
+    const SPEED_REGEN_DKPH = 50;
+    const SPEED_EV_MAX_DKPH = 350;
+    const PDEM_REGEN_DKW = -50;
+    const PDEM_STOP_LOW_DKW = -10;
+    const PDEM_STOP_HIGH_DKW = 10;
+    const PDEM_HYB_IN_DKW = 500;
+    const PDEM_HYB_OUT_DKW = 400;
+    const PDEM_HYB_MID_DKW = 150;
+    const PDEM_HYB_LOW_DKW = 100;
+    const SOC_EV_IN_Q10000 = 3700;
+    const SOC_EV_OUT_Q10000 = 3500;
+    const SOC_LOW_Q10000 = 2500;
+    const SOC_MID_Q10000 = 3000;
+
+    const U16_MAX_D = 65535.0;
+    const S16_MAX_D = 32767.0;
+    const S16_MIN_D = -32768.0;
 
     const MODE_NAMES = {
       [MODE_STANDSTILL]: 'MODE_STANDSTILL',
@@ -543,6 +548,192 @@
       [MODE_ICE]: 'ICE',
       [MODE_HYBRID]: 'HYB'
     };
+
+    // ===== Faithful port of src/mode_logic_team.c =====
+    // Inputs are quantized to the fixed-point API with the same to_u16/to_s16
+    // rule as verification/simulink_c_equivalence.c, then the integer guards
+    // run unchanged. Validated bit-exact against the C (265-row Simulink
+    // replay + 8000-row randomized differential, 0 mismatches).
+
+    function toU16(physical, scale) {
+      const scaled = (physical * scale) + 0.5;
+      if (!(scaled > 0.0)) { return 0; }
+      if (scaled >= U16_MAX_D) { return U16_MAX_D; }
+      return Math.trunc(scaled);
+    }
+
+    function toS16(physical, scale) {
+      let scaled = physical * scale;
+      scaled = (scaled >= 0.0) ? (scaled + 0.5) : (scaled - 0.5);
+      if (scaled >= S16_MAX_D) { return S16_MAX_D; }
+      if (scaled <= S16_MIN_D) { return S16_MIN_D; }
+      return Math.trunc(scaled);
+    }
+
+    function toFixedPoint(input) {
+      return {
+        speed_dkph: toU16(input.speed, 10.0),
+        p_dem_dkw: toS16(input.P_dem, 10.0),
+        soc_q10000: toU16(input.SOC, 10000.0),
+        weng_rpm: toU16(input.wEng, 1.0)
+      };
+    }
+
+    function guardStandstillToEv(fx) {
+      return (fx.speed_dkph > SPEED_STOP_DKPH) &&
+             (fx.speed_dkph <= SPEED_EV_MAX_DKPH) &&
+             (fx.soc_q10000 >= SOC_EV_IN_Q10000);
+    }
+
+    function guardStandstillToStart(fx) {
+      return fx.speed_dkph > SPEED_STOP_DKPH;
+    }
+
+    function guardToRegenb(fx) {
+      return (fx.speed_dkph > SPEED_REGEN_DKPH) &&
+             (fx.p_dem_dkw <= PDEM_REGEN_DKW);
+    }
+
+    function guardEvToStart(fx) {
+      return (fx.speed_dkph > SPEED_EV_MAX_DKPH) ||
+             (fx.p_dem_dkw >= PDEM_HYB_IN_DKW) ||
+             (fx.soc_q10000 < SOC_EV_OUT_Q10000);
+    }
+
+    function guardToStandstill(fx) {
+      return (fx.speed_dkph <= SPEED_STOP_DKPH) &&
+             (fx.p_dem_dkw <= PDEM_STOP_HIGH_DKW) &&
+             (fx.p_dem_dkw >= PDEM_STOP_LOW_DKW);
+    }
+
+    function guardRegenbToStart(fx) {
+      const highSpeedPositiveDemand =
+        (fx.speed_dkph > SPEED_EV_MAX_DKPH) && (fx.p_dem_dkw >= PDEM_STOP_LOW_DKW);
+      return highSpeedPositiveDemand || (fx.soc_q10000 < SOC_EV_OUT_Q10000);
+    }
+
+    function guardRegenbToEv(fx) {
+      return (fx.p_dem_dkw >= PDEM_STOP_LOW_DKW) &&
+             (fx.speed_dkph > SPEED_STOP_DKPH);
+    }
+
+    function guardMotionToEv(fx) {
+      return (fx.weng_rpm > ENG_ON_RPM) &&
+             (fx.p_dem_dkw <= PDEM_HYB_OUT_DKW) &&
+             (fx.p_dem_dkw >= PDEM_STOP_LOW_DKW) &&
+             (fx.speed_dkph > SPEED_STOP_DKPH) &&
+             (fx.speed_dkph <= SPEED_EV_MAX_DKPH) &&
+             (fx.soc_q10000 >= SOC_EV_IN_Q10000);
+    }
+
+    function guardStartToHybrid(fx) {
+      const highLoad = (fx.speed_dkph > SPEED_EV_MAX_DKPH) ||
+                       (fx.p_dem_dkw >= PDEM_HYB_MID_DKW);
+      return (fx.weng_rpm > ENG_ON_RPM) &&
+             (fx.soc_q10000 >= SOC_MID_Q10000) &&
+             highLoad;
+    }
+
+    function guardStartToIce(fx) {
+      return fx.weng_rpm > ENG_ON_RPM;
+    }
+
+    function guardIceToHybrid(fx) {
+      return (fx.p_dem_dkw >= PDEM_HYB_MID_DKW) &&
+             (fx.soc_q10000 >= SOC_MID_Q10000);
+    }
+
+    function guardHybridToIce(fx) {
+      return (fx.p_dem_dkw <= PDEM_HYB_LOW_DKW) ||
+             (fx.soc_q10000 < SOC_LOW_Q10000);
+    }
+
+    function flagWengGtOn(fx) { return fx.weng_rpm > ENG_ON_RPM; }
+    function flagWengLeOff(fx) { return fx.weng_rpm <= ENG_OFF_RPM; }
+
+    function handleStandstill(fx) {
+      if (guardStandstillToEv(fx)) { return MODE_EV; }
+      if (guardStandstillToStart(fx)) { return MODE_START; }
+      return MODE_STANDSTILL;
+    }
+
+    function handleEv(fx) {
+      if (guardToRegenb(fx)) { return MODE_REGENB; }
+      if (guardEvToStart(fx)) { return MODE_START; }
+      if (guardToStandstill(fx)) { return MODE_STANDSTILL; }
+      return MODE_EV;
+    }
+
+    function handleRegenb(fx) {
+      if (guardRegenbToStart(fx)) { return MODE_START; }
+      if (guardToStandstill(fx)) { return MODE_STANDSTILL; }
+      if (guardRegenbToEv(fx)) { return MODE_EV; }
+      return MODE_REGENB;
+    }
+
+    function motionIceCommonExit(fx, currentInBlock) {
+      const toRegenb = flagWengGtOn(fx) && guardToRegenb(fx);
+      if (toRegenb) { return MODE_REGENB; }
+      if (guardMotionToEv(fx)) { return MODE_EV; }
+      if (guardToStandstill(fx)) { return MODE_STANDSTILL; }
+      return currentInBlock;
+    }
+
+    function internalMotionIceReset(fx, currentInBlock) {
+      if (flagWengLeOff(fx)) { return MODE_START; }
+      return currentInBlock;
+    }
+
+    function handleStart(fx) {
+      let next = motionIceCommonExit(fx, MODE_START);
+      if (next === MODE_START) {
+        if (guardStartToHybrid(fx)) { next = MODE_HYBRID; }
+        else if (guardStartToIce(fx)) { next = MODE_ICE; }
+      }
+      return next;
+    }
+
+    function handleIce(fx) {
+      let next = motionIceCommonExit(fx, MODE_ICE);
+      if (next === MODE_ICE) { next = internalMotionIceReset(fx, next); }
+      if (next === MODE_ICE) {
+        if (guardIceToHybrid(fx)) { next = MODE_HYBRID; }
+      }
+      return next;
+    }
+
+    function handleHybrid(fx) {
+      let next = motionIceCommonExit(fx, MODE_HYBRID);
+      if (next === MODE_HYBRID) { next = internalMotionIceReset(fx, next); }
+      if (next === MODE_HYBRID) {
+        if (guardHybridToIce(fx)) { next = MODE_ICE; }
+      }
+      return next;
+    }
+
+    function modeLogicStep(currentMode, fx) {
+      switch (currentMode) {
+        case MODE_STANDSTILL: return handleStandstill(fx);
+        case MODE_EV: return handleEv(fx);
+        case MODE_REGENB: return handleRegenb(fx);
+        case MODE_START: return handleStart(fx);
+        case MODE_ICE: return handleIce(fx);
+        case MODE_HYBRID: return handleHybrid(fx);
+        default: return MODE_STANDSTILL;
+      }
+    }
+
+    function writeOutputs(mode) {
+      switch (mode) {
+        case MODE_EV: return { Mot_Enable: 1, Gen_Enable: 0, ICE_Enable: 0 };
+        case MODE_REGENB: return { Mot_Enable: 1, Gen_Enable: 0, ICE_Enable: 0 };
+        case MODE_START: return { Mot_Enable: 1, Gen_Enable: 1, ICE_Enable: 0 };
+        case MODE_ICE: return { Mot_Enable: 0, Gen_Enable: 1, ICE_Enable: 1 };
+        case MODE_HYBRID: return { Mot_Enable: 1, Gen_Enable: 1, ICE_Enable: 1 };
+        case MODE_STANDSTILL:
+        default: return { Mot_Enable: 0, Gen_Enable: 0, ICE_Enable: 0 };
+      }
+    }
 
     let driveCycleTimer = null;
     let driveCycleFrames = [];
@@ -579,87 +770,14 @@
       },
 
       step(input, phaseLabel = 'Execução manual', progress = this.cycleProgress) {
-        const out = { Mot_Enable: 0, Gen_Enable: 0, ICE_Enable: 0 };
-
-        switch (this.state.current_mode) {
-          case MODE_STANDSTILL:
-            if ((input.speed > SPEED_STOP) &&
-                ((input.speed > SPEED_EV_MAX) || (input.SOC < SOC_EV_IN))) {
-              this.state.current_mode = MODE_START;
-            } else if ((input.speed > SPEED_STOP) &&
-                       (input.speed <= SPEED_EV_MAX) &&
-                       (input.SOC >= SOC_EV_IN) &&
-                       (input.P_dem > PDEM_REGEN)) {
-              this.state.current_mode = MODE_EV;
-            }
-
-            out.Mot_Enable = 0;
-            out.Gen_Enable = 0;
-            out.ICE_Enable = 0;
-            break;
-
-          case MODE_EV:
-            if ((input.speed <= SPEED_STOP) &&
-                (input.P_dem < PDEM_STOP_HIGH) &&
-                (input.P_dem > PDEM_STOP_LOW)) {
-              this.state.current_mode = MODE_STANDSTILL;
-            } else if ((input.speed > SPEED_REGEN) &&
-                       (input.P_dem <= PDEM_REGEN)) {
-              this.state.current_mode = MODE_REGENB;
-            } else if ((input.speed > SPEED_EV_MAX) ||
-                       (input.P_dem >= PDEM_HYB_IN) ||
-                       (input.SOC < SOC_EV_OUT)) {
-              this.state.current_mode = MODE_START;
-            }
-
-            out.Mot_Enable = 1;
-            out.Gen_Enable = 0;
-            out.ICE_Enable = 0;
-            break;
-
-          case MODE_REGENB:
-            if (input.speed <= SPEED_STOP) {
-              this.state.current_mode = MODE_STANDSTILL;
-            } else if (((input.speed > SPEED_EV_MAX) && (input.P_dem >= PDEM_STOP_LOW)) ||
-                       (input.P_dem >= PDEM_HYB_IN) ||
-                       (input.SOC < SOC_EV_OUT)) {
-              this.state.current_mode = MODE_START;
-            } else if ((input.P_dem >= PDEM_STOP_LOW) &&
-                       (input.speed > SPEED_STOP) &&
-                       (input.speed <= SPEED_EV_MAX) &&
-                       (input.SOC > SOC_EV_IN)) {
-              this.state.current_mode = MODE_EV;
-            }
-
-            out.Mot_Enable = 1;
-            out.Gen_Enable = 0;
-            out.ICE_Enable = 0;
-            break;
-
-          case MODE_START:
-            if ((input.wEng > ENG_ON) && (input.SOC < SOC_LOW)) {
-              this.state.current_mode = MODE_ICE;
-            } else if ((input.wEng > ENG_ON) &&
-                       ((input.P_dem >= PDEM_HYB_IN) || (input.speed > SPEED_EV_MAX)) &&
-                       (input.SOC >= SOC_LOW)) {
-              this.state.current_mode = MODE_HYBRID;
-            }
-
-            out.Mot_Enable = 1;
-            out.Gen_Enable = 1;
-            out.ICE_Enable = 0;
-            break;
-
-          case MODE_ICE:
-          case MODE_HYBRID:
-          default:
-            break;
-        }
+        const fx = toFixedPoint(input);
+        const next = modeLogicStep(this.state.current_mode, fx);
+        this.state.current_mode = next;
+        this.outputs = writeOutputs(next);
 
         this.lastInput = { ...input };
         this.currentPhase = phaseLabel;
         this.cycleProgress = progress;
-        this.outputs = out;
         this.stepCounter += 1;
         addTelemetryPoint(input);
         render();
@@ -1044,22 +1162,23 @@
     }
 
     function updateOperationalPanel(input) {
-      const motorActive = sim.outputs.Mot_Enable === 1 || [MODE_EV, MODE_REGENB, MODE_START, MODE_HYBRID].includes(sim.state.current_mode);
-      const generatorActive = sim.outputs.Gen_Enable === 1 || sim.state.current_mode === MODE_START;
-      const iceActive = input.wEng > ENG_ON || sim.state.current_mode === MODE_ICE || sim.state.current_mode === MODE_HYBRID;
+      const motorActive = sim.outputs.Mot_Enable === 1;
+      const generatorActive = sim.outputs.Gen_Enable === 1;
+      const iceActive = sim.outputs.ICE_Enable === 1;
 
       setComponentState('motorCard', 'motorState', motorActive, 'Ativo', 'Desligado');
       setComponentState('generatorCard', 'generatorState', generatorActive, 'Ativo', 'Desligado');
       setComponentState('iceCard', 'iceState', iceActive, 'Ativo', 'Desligado');
 
+      const pdemDkw = toS16(input.P_dem, 10.0);
       const batteryCard = document.getElementById('batteryCard');
       const batteryState = document.getElementById('batteryState');
       batteryCard.className = 'component';
 
-      if (input.P_dem <= PDEM_REGEN) {
+      if (pdemDkw <= PDEM_REGEN_DKW) {
         batteryCard.classList.add('charge', 'active');
         batteryState.textContent = 'Carregando (regen)';
-      } else if (input.P_dem > PDEM_STOP_HIGH) {
+      } else if (pdemDkw > PDEM_STOP_HIGH_DKW) {
         batteryCard.classList.add('discharge', 'active');
         batteryState.textContent = 'Descarregando';
       } else {

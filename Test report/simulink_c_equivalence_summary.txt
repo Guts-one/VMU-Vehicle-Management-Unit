@@ -1,0 +1,9 @@
+SIMULINK_C_EQUIVALENCE rows=265 mismatches=0 result=MATCH
+Compared fields: Mot_Enable, Gen_Enable, ICE_Enable
+Stimulus: Test report/simulink_native_mcdc/stimulus_and_outputs.csv
+          (full Simulink Coverage MC/DC stimulus, replayed in order)
+Stateflow model: Model/HEV_powersplit_adapted/HEV_powersplit_adapted.slx
+C implementation: src/mode_logic_team.c
+Input conversion: physical Simulink values to fixed-point C API scales
+                  (round half away from zero, same rule as test/ helpers)
+Per-row results: Test report/c_full_stimulus_equivalence.csv
