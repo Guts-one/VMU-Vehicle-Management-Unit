@@ -9,3 +9,23 @@ Unity/
 # Keep generated test reports versioned
 !Test report/
 !Test report/**
+# Interactive web simulator is a versioned deliverable
+!/mode_logic_sim.html
+
+# Local Codex/agent workspace files
+/AGENTS.md
+/AGENTS.override.md
+/.agents/
+/.codex/
+/tmp/
+
+# >>> local claude code project quality scaffold >>>
+# Private local Claude Code files
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+# <<< local claude code project quality scaffold <<<
+/test_mode_logic_team_update.exe
+
+# Compiled Simulink/C equivalence harness (build output)
+/verification/simulink_c_equivalence
