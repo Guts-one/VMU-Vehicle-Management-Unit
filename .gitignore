@@ -29,3 +29,6 @@ CLAUDE.local.md
 
 # Compiled Simulink/C equivalence harness (build output)
 /verification/simulink_c_equivalence
+
+# Generated PDF exports (built locally)
+/output/pdf/
