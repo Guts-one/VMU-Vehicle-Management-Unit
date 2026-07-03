@@ -1,6 +1,6 @@
 # Keep all files byte-exact: coverage artifacts are evidence and the
 # *.sh runners must stay LF or bash in WSL fails with 'bash\r' errors.
 * -text
-#fix the language bar
+# fix the language bar
 mode_logic_sim.html linguist-documentation
-Test\ report/** linguist-generated
+Test[[:space:]]report/** linguist-generated
