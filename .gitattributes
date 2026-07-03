@@ -4,3 +4,4 @@
 # fix the language bar
 mode_logic_sim.html linguist-documentation
 Test[[:space:]]report/** linguist-generated
+misra.py linguist-vendored
