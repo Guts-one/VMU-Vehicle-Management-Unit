@@ -13,7 +13,7 @@ fixed-point MISRA C 2012 — with the complete V&V evidence versioned in this re
 
 ## Authorship & context
 
-Final project of the UFPE/Stellantis Postgraduate Technological Residency in Automotive Software Development (2026), building on a MathWorks HEV power-split example (see license note). The project began as team work; this baseline consolidates the per-author suites. My individual (Gustavo) contributions: adaptation of the MathWorks example into the reference model (supervisory logic and plant); scoping of the requirements document — elicitation and validation against the simulated model; the C architecture of the mode-logic module and its fixed-point rebuild for embedded targets; the original transition suites for the START, ICE, and HYBRID states; and the model-level coverage report (line, branch, and MC/DC via Simulink Coverage), used to cross-check the gcc-14 code-level MC/DC.
+Final project of the UFPE/Stellantis Postgraduate Technological Residency in Automotive Software Development (2026), building on a MathWorks HEV power-split example (see license note). The project began as team work; this baseline consolidates the per-author suites. My individual (Gustavo) contributions: adaptation of the MathWorks example into the reference model (supervisory logic and plant); scoping of the requirements document — elicitation and validation against the simulated model; the C architecture of the mode-logic module and its fixed-point rebuild for embedded targets; the original transition suites for the START, ICE, and HYBRID states; the model-level coverage report (line, branch, and MC/DC via Simulink Coverage), used to cross-check the gcc-14 code-level MC/DC; and the CI automation fixes (GitHub Actions build/test/MISRA pipeline).
 
 ## Overview
 
