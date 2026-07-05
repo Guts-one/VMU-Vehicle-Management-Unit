@@ -56,8 +56,10 @@ The VMU supervisory logic selects operating modes — `STANDSTILL`, `EV`, `REGEN
 │   └── mapeamento_transicoes_secao4_por_responsavel.md
 ├── verification/
 │   ├── simulink_c_equivalence.c     # Replays the full Simulink stimulus through the C API
-│   └── equivalence_live/            # Live model↔C co-simulation harness (S-Function + Test Manager)
-├── mode_logic_sim.html              # Interactive web simulator
+│   ├── equivalence_live/            # Live model↔C co-simulation harness (S-Function + Test Manager)
+│   └── js_equivalence/              # Deterministic web-simulator ↔ C differential harness (state + MC/DC)
+├── mode_logic.js                    # Supervisory logic — single source shared by the web sim + JS↔C harness
+├── mode_logic_sim.html              # Interactive web simulator (consumes mode_logic.js)
 ├── run_branch_coverage.sh           # Branch/line coverage runner (gcc-11 + lcov)
 ├── run_mcdc_native.sh               # Native MC/DC runner (gcc-14 + gcov-14 --conditions)
 ├── run_simulink_c_equivalence.sh    # 265-row Simulink↔C behavioral equivalence check
@@ -135,7 +137,7 @@ MC/DC is complete both under `gcov-14 --conditions` for the C implementation and
 
 ### Interactive Web Simulator
 
-`mode_logic_sim.html` is a standalone, dependency-free JavaScript simulator for **interactive** exploration of the supervisory logic. Its transition logic is a **faithful fixed-point port** of `mode_logic_team.c`: it quantizes the physical inputs with the same `to_u16`/`to_s16` rule as the equivalence harness and then runs the integer guards unchanged. It is validated bit-exact against the C — the 265-row Simulink stimulus replays with 0 mismatches and an 8,000-step randomized differential against the compiled C agrees on every step. It remains a hand-maintained demo and is **not** wired into the automated CI equivalence harness; the authoritative gate is still the C implementation, the Unity tests, and the Simulink↔C equivalence check.
+`mode_logic_sim.html` is a standalone, dependency-free simulator for **interactive** exploration of the supervisory logic. Its transition logic now lives in `mode_logic.js` — a **faithful atomic-predicate port** of `mode_logic_team.c` that quantizes the physical inputs with the same `to_u16`/`to_s16` rule and runs the integer guards unchanged (loaded as a plain script, so the page still opens from `file://` with no build). That module is validated **deterministically** by `verification/js_equivalence/`: the ±1 LSB boundary stimulus (473 rows, reused from `equivalence_live/`) replays through the JS and matches the compiled C on **state and outputs — 0 mismatches**; MC/DC independence holds for every probed condition; and c8 branch coverage of the module is ~100%. This runs as its own CI job (`js-c-equivalence`), so the web simulator is now a **CI-gated** artifact. The authoritative gates remain the C implementation, the Unity tests, and the Simulink↔C / live-oracle equivalence.
 
 Features:
 
@@ -273,7 +275,7 @@ PR checks and downloadable analysis reports are available under the workflow run
 ## Notes
 
 - `src/mode_logic_team.c` is the single C implementation maintained on `main`. Legacy per-author MC/DC suites and the `Person_E_Gustavo`/`shared_tests` folders were consolidated into the transition-oriented suites listed above.
-- `mode_logic_sim.html` is a faithful fixed-point JavaScript port of the logic for the web demo, validated bit-exact against `mode_logic_team.c` (265-row Simulink replay + 8,000-step randomized differential, 0 mismatches). It is maintained by hand and is **not** part of the automated CI equivalence harness, so treat the C implementation, the Unity tests, and the Simulink↔C equivalence check as the source of truth.
+- `mode_logic_sim.html` consumes `mode_logic.js` (single source of truth), a faithful atomic-predicate port of `mode_logic_team.c`. It is validated deterministically by `verification/js_equivalence/` (473-row ±1 LSB differential vs the compiled C + Python mirror, 0 mismatches on state **and** outputs; MC/DC independence; ~100% branch coverage) and gated by the `js-c-equivalence` CI job. The C implementation, the Unity tests, and the Simulink↔C equivalence check remain the authoritative source of truth.
 - Generated Simulink artifacts under `Model/HEV_powersplit_adapted/slprj/` are intentionally not versioned; they are produced locally on first build.
 - The `Test report/` folder is **versioned on purpose** (the `.gitignore` whitelists it). Local `unity/` clones, raw `.gcov`/`.gcda`/`.gcno`/`.info` outside `Test report/`, and bare `coverage_html/` directories are ignored to keep CI clean.
 - The public-API entry points `ModeLogic_Init` and `ModeLogic_Step` carry inline `cppcheck-suppress` directives for `misra-c2012-8.7` (Rule 8.7 — internal linkage) and `unusedFunction`. Both are false positives: the functions are consumed by `test/` and external clients, so they cannot be `static` and are not actually unused.

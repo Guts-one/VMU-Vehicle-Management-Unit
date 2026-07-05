@@ -1,0 +1,17 @@
+{
+  "name": "vmu-mode-logic",
+  "version": "1.0.0",
+  "private": true,
+  "description": "VMU supervisory mode logic — web simulator (mode_logic.js) and the deterministic JS<->C equivalence harness.",
+  "scripts": {
+    "verify": "node verification/js_equivalence/verify.js",
+    "equiv": "node verification/js_equivalence/run_js_equivalence.js --probe-out verification/js_equivalence/probe_out.csv --out verification/js_equivalence/js_out.csv",
+    "equiv:mirror": "node verification/js_equivalence/run_js_equivalence.js",
+    "mcdc": "node verification/js_equivalence/mcdc_independence_pairs.js",
+    "coverage": "c8 --include=mode_logic.js --reporter=text --reporter=json-summary node verification/js_equivalence/run_coverage.js",
+    "test": "node verification/js_equivalence/verify.js && npm run coverage"
+  },
+  "devDependencies": {
+    "c8": "^10.1.3"
+  }
+}
