@@ -1,0 +1,5 @@
+row,scenario,phase,speed_kph,p_dem_kw,soc,weng_rpm,note
+199,SPEED_EV_MAX.subLSB,speed~35.04,35.04,0,0.4,0,chart(continuous) vs C(quantized) differ within +/-0.5 LSB of threshold
+201,SPEED_STOP.subLSB,speed~0.54,0.54,0,0.3,0,chart(continuous) vs C(quantized) differ within +/-0.5 LSB of threshold
+203,SOC_EV_IN.subLSB,soc~0.36996,10,0,0.36996,0,chart(continuous) vs C(quantized) differ within +/-0.5 LSB of threshold
+206,PDEM_HYB_IN.subLSB,pdem~49.96,10,49.96,0.4,0,chart(continuous) vs C(quantized) differ within +/-0.5 LSB of threshold

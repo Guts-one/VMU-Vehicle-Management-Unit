@@ -32,3 +32,14 @@ CLAUDE.local.md
 
 # Generated PDF exports (built locally)
 /output/pdf/
+
+# Live equivalence harness (MATLAB): generated S-Function/harness and run logs
+/verification/equivalence_live/slprj/
+/verification/equivalence_live/sfun_mode_logic.c
+/verification/equivalence_live/sfun_mode_logic.tlc
+/verification/equivalence_live/*.mexw64
+/verification/equivalence_live/rtwmakecfg.m
+/verification/equivalence_live/mode_logic_equiv_harness.slx
+/verification/equivalence_live/*.slxc
+/verification/equivalence_live/*_console.txt
+/verification/equivalence_live/*_log.txt

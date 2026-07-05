@@ -1,0 +1,9 @@
+LIVE MODEL<->HAND-CODE EQUIVALENCE (S-Function co-simulation)
+Harness         : mode_logic_equiv_harness
+Oracle (live)   : mode_logic_equiv_harness/Mode Logic
+Hand code       : src/mode_logic_team.c via sfun_mode_logic
+Stimulus        : boundary_stimulus.csv (473 rows)
+Grid mismatches : 0 (outputs or state)  -> PASS
+State mismatches: 0 grid rows (chart active leaf state vs C mode)
+Sub-LSB band    : 4 rows (documented quantization interval)
+Chart coverage  : decision 44/44 (100.00%), condition 78/78 (100.00%), MC/DC 39/39 (100.00%)
