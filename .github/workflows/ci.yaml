@@ -101,3 +101,40 @@ jobs:
             echo "=== Running $t ==="
             ./test_runner
           done
+
+  js-c-equivalence:
+    name: JS ↔ C equivalence (web simulator)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Guard — reuse of verification/equivalence_live must be present
+        run: |
+          set -e
+          missing=0
+          for f in verification/equivalence_live/gen_boundary_stimulus.py \
+                   verification/equivalence_live/mode_probe.c \
+                   verification/equivalence_live/mcdc_mapping.csv; do
+            if [ ! -f "$f" ]; then echo "MISSING: $f"; missing=1; fi
+          done
+          if [ "$missing" != "0" ]; then
+            echo "This gate reuses verification/equivalence_live/ (stimulus generator +"
+            echo "compiled-C oracle + MC/DC map). Commit that folder so CI can run it."
+            exit 1
+          fi
+
+      - name: Install Node deps
+        run: npm ci
+
+      - name: JS ↔ C differential + MC/DC independence (state + outputs, 0 mismatches)
+        run: npm run verify
+
+      - name: MC/DC-grade branch coverage of mode_logic.js
+        run: npm run coverage

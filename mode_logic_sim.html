@@ -1,1387 +1,1197 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simulação do mode_logic_team.c</title>
+  <title>VMU · Mode Logic — instrument bench</title>
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #111827;
-      --panel-2: #1f2937;
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-      --accent: #38bdf8;
-      --ok: #22c55e;
-      --warn: #f59e0b;
+      /* --- surfaces: cool near-black cluster glass --- */
+      --bg:        #090B0F;
+      --bg-2:      #0C0F14;
+      --surface:   #11161D;
+      --surface-2: #151C25;
+      --line:      #232C37;
+      --line-soft: #1A222C;
+      --ink:       #E9EEF4;
+      --ink-2:     #AEB8C4;
+      --dim:       #717C8A;
+      --dimmer:    #444E5B;
+
+      /* --- one signature accent (Maserati blue), swapped live per drive mode --- */
+      --accent:       #3E86E0;
+      --accent-ice:   #9BC0EE;
+      --accent-steel: #52657A;
+
+      /* powertrain mode identity — muted instrument tones, not neon */
+      --m-stop:  #93A1B1;
+      --m-ev:    #3E86E0;
+      --m-regen: #37B98A;
+      --m-start: #E0A63C;
+      --m-ice:   #DB6E3A;
+      --m-hyb:   #8A83E6;
+      --danger:  #E0596F;
+
+      --display: "Bahnschrift", "DIN Alternate", "Oswald", "Segoe UI", system-ui, sans-serif;
+      --sans:    "Segoe UI", system-ui, Roboto, Helvetica, Arial, sans-serif;
+      --mono:    ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+
+      --r: 12px;
+      --r-sm: 8px;
     }
 
     * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+
     body {
       margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background: linear-gradient(135deg, #0f172a, #111827);
-      color: var(--text);
+      font-family: var(--sans);
+      color: var(--ink);
+      background:
+        radial-gradient(900px 480px at 50% -6%, rgba(62,134,224,0.05), transparent 60%),
+        var(--bg);
+      background-attachment: fixed;
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 24px;
-    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 18px 20px 40px; }
 
-    h1, h2, h3 {
-      margin-top: 0;
-    }
+    /* ---------- top bar ---------- */
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-bottom: 14px; border-bottom: 1px solid var(--line-soft); margin-bottom: 16px; }
+    .brand { display: flex; align-items: baseline; gap: 12px; }
+    .brand .mark { font-family: var(--display); font-weight: 700; font-size: 19px; letter-spacing: 0.16em; }
+    .brand .sub { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--dim); }
+    .prov { font-family: var(--mono); font-size: 10.5px; color: var(--dim); text-align: right; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .prov b { color: var(--ink-2); font-weight: 600; }
+    .prov .ok { color: var(--m-regen); font-weight: 600; }
+    .prov .src { color: var(--ink-2); }
 
-    .subtitle {
-      color: var(--muted);
-      margin-bottom: 20px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 16px;
-    }
-
+    /* ---------- cards ---------- */
     .card {
-      background: rgba(17, 24, 39, 0.95);
-      border: 1px solid #334155;
-      border-radius: 14px;
+      background: linear-gradient(180deg, var(--surface), var(--bg-2));
+      border: 1px solid var(--line);
+      border-radius: var(--r);
       padding: 16px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
     }
+    .card__title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--dim); margin: 0 0 13px; display: flex; align-items: center; gap: 10px; }
+    .card__title::after { content: ""; flex: 1; height: 1px; background: var(--line-soft); }
+    .eyebrow { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--dim); }
 
-    .inputs-grid {
+    /* ================= CLUSTER (hero) ================= */
+    .cluster {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    label {
-      display: block;
-      font-size: 0.95rem;
-      margin-bottom: 6px;
-      color: #cbd5e1;
-    }
-
-    input[type="number"] {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #475569;
-      background: #0b1220;
-      color: var(--text);
-    }
-
-    .buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    button {
-      border: none;
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-weight: 700;
-      cursor: pointer;
-      background: var(--accent);
-      color: #00111a;
-    }
-
-    button.secondary {
-      background: #334155;
-      color: var(--text);
-    }
-
-    button.warn {
-      background: var(--warn);
-      color: #111827;
-    }
-
-    button.running {
-      background: var(--ok);
-      color: #052e16;
-    }
-
-    .status {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .pill {
-      background: var(--panel-2);
-      border-radius: 10px;
-      padding: 10px;
-    }
-
-    .pill strong {
-      display: block;
-      color: var(--muted);
-      font-size: 0.85rem;
-      margin-bottom: 4px;
-    }
-
-    .mode-badge {
-      display: inline-block;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: rgba(34, 197, 94, 0.15);
-      color: #86efac;
-      font-weight: 700;
-      margin-top: 6px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 12px;
-      font-size: 0.92rem;
-    }
-
-    th, td {
-      border-bottom: 1px solid #334155;
-      padding: 8px;
-      text-align: left;
-    }
-
-    th {
-      color: #93c5fd;
-    }
-
-    .note {
-      color: var(--muted);
-      font-size: 0.92rem;
-      line-height: 1.4;
-    }
-
-    .phase-text {
-      margin-top: 8px;
-      color: #bfdbfe;
-      font-size: 0.92rem;
-    }
-
-    .progress {
-      width: 100%;
-      height: 10px;
-      margin-top: 10px;
-      border-radius: 999px;
-      background: #0b1220;
-      overflow: hidden;
-      border: 1px solid #334155;
-    }
-
-    .progress-bar {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #38bdf8, #22c55e);
-      transition: width 0.35s ease;
-    }
-
-    .component-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .component {
-      background: #0b1220;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 12px;
-      transition: all 0.25s ease;
-    }
-
-    .component span {
-      display: block;
-      color: var(--muted);
-      font-size: 0.85rem;
-      margin-bottom: 4px;
-    }
-
-    .component strong {
-      font-size: 0.95rem;
-    }
-
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: 1.1fr 1fr;
-      gap: 16px;
-      align-items: start;
-    }
-
-    .gauge-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-    }
-
-    .gauge-card {
-      background: radial-gradient(circle at center, rgba(30, 41, 59, 0.95), rgba(2, 6, 23, 0.98) 72%);
-      border: 1px solid #475569;
+      grid-template-columns: 1fr 1.15fr 1fr;
+      align-items: center;
+      gap: 20px;
+      padding: 22px 26px;
+      background:
+        radial-gradient(520px 300px at 50% 42%, rgba(62,134,224,0.05), transparent 70%),
+        linear-gradient(180deg, var(--surface), var(--bg-2));
+      border: 1px solid var(--line);
       border-radius: 16px;
-      padding: 12px;
-      text-align: center;
-      box-shadow: inset 0 0 24px rgba(15, 23, 42, 0.95), 0 10px 18px rgba(0, 0, 0, 0.28);
     }
+    @media (max-width: 860px) { .cluster { grid-template-columns: 1fr; gap: 26px; } }
 
-    .gauge-readout {
-      margin-top: 8px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: #e2e8f0;
-    }
+    /* left — energy meters */
+    .inst--left { display: grid; gap: 20px; }
+    .meter__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .meter__lbl { font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; color: var(--dim); }
+    .meter__val { font-family: var(--display); font-size: 22px; font-weight: 600; color: var(--ink); }
+    .meter__val b { font-weight: 600; }
+    .meter__sub { font-family: var(--mono); font-size: 10.5px; color: var(--dim); margin-top: 7px; }
 
-    .gauge-label {
-      font-size: 0.84rem;
-      color: var(--muted);
-    }
+    .cells { display: flex; gap: 3px; height: 16px; }
+    .cells i { flex: 1; border-radius: 2px; background: var(--line); transition: background 0.3s ease; }
+    .cells i.f { background: var(--m-regen); }
+    .cells i.f.dis { background: var(--m-ice); }
 
-    .component.active {
-      border-color: #22c55e;
-      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.25) inset;
-      background: rgba(34, 197, 94, 0.12);
-    }
+    .pbar { position: relative; height: 16px; border-radius: 4px; background: var(--line); overflow: hidden; }
+    .pbar__zero { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--dimmer); z-index: 2; }
+    .pbar__fill { position: absolute; top: 0; bottom: 0; background: var(--accent); border-radius: 3px; transition: left 0.25s ease, width 0.25s ease, background 0.25s ease; }
 
-    .component.charge {
-      border-color: #38bdf8;
-      background: rgba(56, 189, 248, 0.12);
-    }
+    /* center — speedometer */
+    .inst--speedo { position: relative; display: flex; align-items: center; justify-content: center; }
+    #speedo { display: block; width: 100%; max-width: 300px; aspect-ratio: 1 / 1; height: auto; }
+    .speedo__overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+    .speedo__val { font-family: var(--display); font-weight: 600; font-stretch: 72%; font-size: clamp(58px, 12vw, 92px); line-height: 0.9; letter-spacing: -0.01em; color: var(--ink); font-variant-numeric: tabular-nums; }
+    .speedo__unit { font-family: var(--mono); font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--dim); margin-top: 4px; }
+    .speedo__tag { font-family: var(--mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dimmer); margin-top: 8px; }
 
-    .component.discharge {
-      border-color: #f59e0b;
-      background: rgba(245, 158, 11, 0.12);
-    }
+    /* right — drive mode */
+    .inst--right { display: grid; gap: 14px; align-content: center; }
+    .modebox__name { font-family: var(--display); font-weight: 600; font-stretch: 82%; font-size: clamp(30px, 4.6vw, 44px); line-height: 1; letter-spacing: 0.01em; color: var(--accent); transition: color 0.3s ease; }
+    .modebox__idx { font-family: var(--mono); font-size: 11px; color: var(--dim); margin-top: 6px; }
+    .modebox__idx b { color: var(--ink-2); }
 
-    .mono {
-      font-family: Consolas, monospace;
-    }
+    .lamps { display: flex; gap: 8px; }
+    .lamp { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 6px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); transition: border-color 0.2s ease, background 0.2s ease; }
+    .lamp__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dimmer); transition: background 0.2s ease, box-shadow 0.2s ease; }
+    .lamp__lbl { font-family: var(--display); font-size: 13px; font-weight: 600; letter-spacing: 0.14em; color: var(--dim); transition: color 0.2s ease; }
+    .lamp.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 12%, var(--surface-2)); }
+    .lamp.on .lamp__dot { background: var(--c); box-shadow: 0 0 8px color-mix(in srgb, var(--c) 65%, transparent); }
+    .lamp.on .lamp__lbl { color: var(--ink); }
 
-    .chart-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 12px;
-      margin-top: 12px;
-    }
+    .flow { font-family: var(--mono); font-size: 11px; color: var(--dim); line-height: 1.5; min-height: 2.4em; }
+    .flow b { color: var(--ink-2); font-weight: 600; }
 
-    .chart-card {
-      background: #0b1220;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 12px;
-    }
+    /* engine (ICE) speed — the actual FSM input, co-located with the ICE lamp */
+    .eng { border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); padding: 11px 12px; }
+    .eng__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+    .eng__lbl { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+    .eng__state { font-family: var(--display); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; padding: 2px 9px; border-radius: 5px; border: 1px solid var(--line); color: var(--ink-2); background: var(--bg); }
+    .eng__state.cranking { color: #14100a; background: var(--m-start); border-color: transparent; }
+    .eng__state.running { color: #170a06; background: var(--m-ice); border-color: transparent; }
+    .eng__read { font-family: var(--display); font-size: 21px; font-weight: 600; color: var(--ink); }
+    .eng__read span { font-family: var(--mono); font-size: 11px; font-weight: 400; color: var(--dim); margin-left: 4px; }
+    .eng__bar { position: relative; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin-top: 8px; }
+    /* threshold marker: neutral light tick so it stays visible over any fill colour (steel/amber/copper) */
+    .eng__band { position: absolute; top: -2px; bottom: -2px; left: 11.35%; width: 2px; margin-left: -1px; background: var(--ink); box-shadow: 0 0 0 1px var(--bg); z-index: 2; }
+    .eng__fill { position: absolute; top: 0; bottom: 0; left: 0; width: 0%; background: var(--accent-steel); border-radius: 4px; transition: width 0.15s ease, background 0.25s ease; z-index: 1; }
+    .eng__note { font-family: var(--mono); font-size: 10px; color: var(--dim); margin-top: 7px; }
+    .eng__note.live { color: var(--ink-2); }
 
-    .chart-card h3 {
-      margin-bottom: 4px;
-      font-size: 1rem;
-    }
+    /* ================= MODE RAIL ================= */
+    .rail__track { position: relative; display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 5px; margin-top: 14px; }
+    .rseg { flex: 1; text-align: center; padding: 9px 4px; border-radius: 7px; position: relative; z-index: 1; }
+    .rseg__n { display: block; font-family: var(--display); font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: var(--dim); transition: color 0.25s ease; }
+    .rseg__i { display: block; font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.1em; color: var(--dimmer); margin-top: 2px; }
+    .rseg.on .rseg__n { color: var(--ink); }
+    .rseg.on .rseg__i { color: var(--dim); }
+    .rail__marker { position: absolute; top: 5px; bottom: 5px; left: 5px; width: 40px; border-radius: 7px; z-index: 0; background: color-mix(in srgb, var(--accent) 15%, transparent); border: 1px solid var(--accent); transition: left 0.35s cubic-bezier(0.4,0,0.2,1), width 0.35s cubic-bezier(0.4,0,0.2,1); }
+    @keyframes railpulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+    .rail__marker.pulse { animation: railpulse 0.55s ease-out; }
 
-    .chart-card p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.84rem;
-    }
+    /* ================= CONTROL DECK ================= */
+    .deck { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; margin-top: 16px; }
+    @media (max-width: 860px) { .deck { grid-template-columns: 1fr; } }
 
-    canvas {
-      display: block;
-      width: 100%;
-      height: 180px;
-      margin-top: 8px;
-      border-radius: 10px;
-      background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(11, 18, 32, 0.95));
-      border: 1px solid #1e293b;
-    }
+    .field { margin-bottom: 15px; }
+    .field:last-child { margin-bottom: 0; }
+    .field__top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .field__lbl { font-size: 13px; font-weight: 600; color: var(--ink); }
+    .field__lbl var { font-family: var(--mono); font-style: normal; font-size: 10.5px; color: var(--dim); margin-left: 6px; }
+    .field__fx { font-family: var(--mono); font-size: 10.5px; color: var(--dim); white-space: nowrap; }
+    .field__fx b { color: var(--accent-ice); font-weight: 600; }
+    .field__row { display: flex; align-items: center; gap: 10px; }
 
-    #speedGauge,
-    #rpmGauge {
-      height: 220px;
-      border-radius: 50%;
-      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.85) 0%, rgba(2, 6, 23, 0.98) 68%);
-      border: 1px solid #334155;
-    }
+    input[type="range"] { -webkit-appearance: none; appearance: none; flex: 1; height: 3px; border-radius: 999px; background: var(--line); outline: none; margin: 0; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--ink); border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--line); cursor: pointer; transition: transform 0.1s ease; }
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.14); }
+    input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius: 50%; background: var(--ink); border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--line); cursor: pointer; }
+    input[type="number"] { width: 74px; padding: 6px 8px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-family: var(--mono); font-size: 12.5px; text-align: right; }
+    input[type="number"]:focus, input[type="range"]:focus-visible { border-color: var(--accent); outline: 2px solid color-mix(in srgb, var(--accent) 38%, transparent); outline-offset: 1px; }
 
-    .list {
-      margin: 0;
-      padding-left: 18px;
-      color: #dbeafe;
-    }
+    .ticks { position: relative; height: 24px; margin-top: 3px; }
+    .tick { position: absolute; top: 0; transform: translateX(-50%); text-align: center; }
+    .tick i { display: block; width: 1px; height: 5px; background: var(--dimmer); margin: 0 auto 2px; }
+    .tick span { font-family: var(--mono); font-size: 8.5px; color: var(--dimmer); white-space: nowrap; }
+    .tick.lo i { height: 14px; }
+    .tick.lo span { position: relative; top: 9px; }
 
-    @media (max-width: 700px) {
-      .inputs-grid,
-      .status,
-      .dashboard-grid,
-      .component-grid {
-        grid-template-columns: 1fr;
-      }
+    /* transport + chips */
+    .bar-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 3px; }
+    button { font-family: var(--sans); font-size: 12.5px; font-weight: 600; border: 1px solid var(--line); border-radius: var(--r-sm); padding: 9px 13px; cursor: pointer; color: var(--ink); background: var(--surface-2); transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease; display: inline-flex; align-items: center; gap: 6px; }
+    button:hover { border-color: var(--dim); background: var(--line-soft); }
+    button:active { transform: translateY(1px); }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    button.primary { background: var(--accent); color: #061019; border-color: transparent; }
+    button.primary:hover { background: var(--accent-ice); }
+    button.ghost { background: transparent; }
+    button.danger { color: var(--danger); }
+    button.danger:hover { border-color: var(--danger); }
+    button.running { background: var(--m-ice); color: #14060b; border-color: transparent; }
+    .chip { font-family: var(--display); font-size: 12.5px; font-weight: 600; letter-spacing: 0.05em; padding: 8px 12px; }
+    kbd { font-family: var(--mono); font-size: 10px; padding: 1px 5px; border: 1px solid var(--line); border-radius: 4px; color: var(--dim); background: var(--bg); }
+
+    .cmd-note { font-family: var(--mono); font-size: 10.5px; color: var(--dim); margin: 12px 0 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .phase { margin-top: 14px; border-top: 1px solid var(--line-soft); padding-top: 12px; }
+    .phase__label { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+    .phase__label b { color: var(--ink-2); font-weight: 600; }
+    .progress { height: 4px; border-radius: 999px; background: var(--bg); overflow: hidden; margin-top: 9px; border: 1px solid var(--line-soft); }
+    .progress > i { display: block; height: 100%; width: 0%; background: var(--accent); transition: width 0.35s ease, background 0.3s ease; }
+
+    /* ================= DATA ZONE ================= */
+    .data { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 16px; }
+
+    .charts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 860px) { .charts { grid-template-columns: repeat(2, 1fr); } }
+    .chart h3 { margin: 0; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 7px; }
+    .chart h3 .dot { width: 8px; height: 8px; border-radius: 2px; }
+    .chart p { margin: 1px 0 0; font-family: var(--mono); font-size: 9.5px; color: var(--dimmer); letter-spacing: 0.04em; }
+    .chart canvas { width: 100%; height: 104px; display: block; margin-top: 8px; }
+
+    .data-2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; }
+    @media (max-width: 860px) { .data-2 { grid-template-columns: 1fr; } }
+    .log-wrap { max-height: 232px; overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; min-width: 520px; }
+    thead th { text-align: right; padding: 7px 9px; color: var(--dim); font-weight: 500; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); }
+    thead th:first-child, thead th:nth-child(2) { text-align: left; }
+    tbody td { text-align: right; padding: 6px 9px; border-bottom: 1px solid var(--line-soft); color: var(--dim); }
+    tbody td:first-child { color: var(--dimmer); text-align: left; }
+    tbody td.mode { text-align: left; color: var(--ink); }
+    tbody td .tag { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 7px; vertical-align: middle; }
+    tbody tr:hover td { background: rgba(255,255,255,0.02); }
+    tbody td.on { color: var(--ink); }
+
+    .thresholds { columns: 2; column-gap: 20px; font-family: var(--mono); font-size: 11px; color: var(--dim); margin: 0; padding: 0; list-style: none; }
+    .thresholds li { break-inside: avoid; padding: 3px 0; display: flex; justify-content: space-between; gap: 10px; }
+    .thresholds li b { color: var(--ink-2); font-weight: 600; }
+    @media (max-width: 520px) { .thresholds { columns: 1; } }
+
+    .foot { margin-top: 22px; font-family: var(--mono); font-size: 10.5px; color: var(--dimmer); text-align: center; line-height: 1.7; }
+    .foot code { color: var(--dim); }
+
+    @media (prefers-reduced-motion: reduce) { *, .rail__marker { transition: none !important; animation: none !important; } }
+
+    /* ================= GUIDED TOUR ================= */
+    #tourBtn { font-size: 11px; padding: 6px 10px; }
+    #tourRoot { position: fixed; inset: 0; z-index: 1000; }
+    #tourBlocker { position: fixed; inset: 0; z-index: 1000; background: transparent; }
+    #tourBlocker.dim { background: rgba(6,9,13,0.74); }
+    #tourHighlight {
+      position: fixed; z-index: 1001; border-radius: 10px; pointer-events: none;
+      border: 1.5px solid var(--accent);
+      box-shadow: 0 0 0 9999px rgba(6,9,13,0.74), 0 0 22px color-mix(in srgb, var(--accent) 55%, transparent);
+      transition: left 0.25s cubic-bezier(0.4,0,0.2,1), top 0.25s cubic-bezier(0.4,0,0.2,1),
+                  width 0.25s cubic-bezier(0.4,0,0.2,1), height 0.25s cubic-bezier(0.4,0,0.2,1);
     }
+    #tourCard {
+      position: fixed; z-index: 1002; width: 340px; max-width: calc(100vw - 24px);
+      background: linear-gradient(180deg, var(--surface), var(--bg-2));
+      border: 1px solid var(--line); border-radius: var(--r); padding: 16px 16px 14px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.55);
+    }
+    #tourCard .t-eyebrow { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); margin-bottom: 9px; display: flex; justify-content: space-between; align-items: center; }
+    #tourCard .t-eyebrow span:last-child { color: var(--dim); }
+    #tourCard h4 { margin: 0 0 7px; font-family: var(--display); font-size: 17px; font-weight: 600; letter-spacing: 0.01em; color: var(--ink); }
+    #tourCard p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+    #tourCard p b { color: var(--ink); font-weight: 600; }
+    #tourCard code { font-family: var(--mono); font-size: 11.5px; color: var(--accent-ice); }
+    .t-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 15px; }
+    .t-nav { display: flex; gap: 7px; }
+    .t-skip { font-family: var(--sans); font-size: 11.5px; font-weight: 500; color: var(--dim); background: transparent; border: none; cursor: pointer; padding: 6px 2px; }
+    .t-skip:hover { color: var(--ink-2); text-decoration: underline; }
+    #tourCard button.t-btn { font-size: 12px; padding: 7px 13px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Simulação do `mode_logic_team.c`</h1>
-    <p class="subtitle">
-      Página standalone que replica fielmente, em ponto fixo (bit-exata), a lógica de transição do arquivo <code>src/mode_logic_team.c</code> em JavaScript.
-    </p>
+  <div class="wrap">
 
-    <section class="card" style="margin-bottom:16px;">
-      <h2>Painel em tempo real</h2>
-      <p class="note">Os gráficos, o powertrain e os instrumentos abaixo refletem as mudanças de estado em tempo real.</p>
+    <!-- TOP BAR -->
+    <header class="top">
+      <div class="brand">
+        <span class="mark">VMU</span>
+        <span class="sub">Supervisory Mode Logic</span>
+      </div>
+      <div class="prov">
+        <span class="src">mirror of <b>src/mode_logic_team.c</b></span>
+        <span><span class="ok">473/473</span> equivalence</span>
+        <span><span class="ok">MC/DC</span> covered</span>
+        <button id="tourBtn" class="ghost" title="Replay the guided tour">❔ Tour</button>
+      </div>
+    </header>
 
-      <div class="dashboard-grid">
-        <div>
-          <div class="gauge-grid">
-            <div class="gauge-card">
-              <h3>Velocímetro</h3>
-              <canvas id="speedGauge" width="220" height="220"></canvas>
-              <div id="speedReadout" class="gauge-readout">0.0 km/h</div>
-              <div class="gauge-label">Entrada `speed`</div>
-            </div>
-            <div class="gauge-card">
-              <h3>Conta-giros</h3>
-              <canvas id="rpmGauge" width="220" height="220"></canvas>
-              <div id="rpmReadout" class="gauge-readout">0 rpm</div>
-              <div class="gauge-label">Rotação `wEng`</div>
-            </div>
-          </div>
+    <!-- CLUSTER -->
+    <section class="cluster">
+      <div class="inst inst--left">
+        <div class="meter">
+          <div class="meter__head"><span class="meter__lbl">STATE OF CHARGE</span><span class="meter__val"><b id="socRead">40</b>%</span></div>
+          <div class="cells" id="battCells"></div>
+          <div class="meter__sub" id="battState">stable</div>
         </div>
-
-        <div>
-          <h3 style="margin-top:0;">Elementos do powertrain</h3>
-          <div class="component-grid">
-            <div id="motorCard" class="component">
-              <span>Motor elétrico</span>
-              <strong id="motorState">Desligado</strong>
-            </div>
-            <div id="generatorCard" class="component">
-              <span>Gerador</span>
-              <strong id="generatorState">Desligado</strong>
-            </div>
-            <div id="iceCard" class="component">
-              <span>Motor a combustão</span>
-              <strong id="iceState">Desligado</strong>
-            </div>
-            <div id="batteryCard" class="component">
-              <span>Bateria</span>
-              <strong id="batteryState">Estável</strong>
-            </div>
-          </div>
-
-          <div class="pill" style="margin-top:12px;">
-            <strong>Fase do ciclo automático</strong>
-            <span id="phaseLabel">Aguardando comando</span>
-            <div id="powerFlow" class="phase-text mono">Sistema parado / pronto para iniciar.</div>
-            <div class="progress">
-              <div id="progressBar" class="progress-bar"></div>
-            </div>
-          </div>
+        <div class="meter">
+          <div class="meter__head"><span class="meter__lbl">POWER DEMAND</span><span class="meter__val"><b id="powerRead">0.0</b> kW</span></div>
+          <div class="pbar"><div class="pbar__zero" id="powerZero"></div><div class="pbar__fill" id="powerFill"></div></div>
+          <div class="meter__sub" id="powerDir">idle</div>
         </div>
       </div>
 
-      <div class="chart-grid">
-        <div class="chart-card">
-          <h3>Velocidade</h3>
-          <p>`speed` ao longo da simulação</p>
-          <canvas id="speedChart" width="320" height="180"></canvas>
+      <div class="inst inst--speedo">
+        <canvas id="speedo" width="300" height="300"></canvas>
+        <div class="speedo__overlay">
+          <div class="speedo__val" id="speedRead">0</div>
+          <div class="speedo__unit">km/h</div>
+          <div class="speedo__tag">vehicle speed</div>
         </div>
-        <div class="chart-card">
-          <h3>Potência demandada</h3>
-          <p>`P_dem` com aceleração e frenagem regenerativa</p>
-          <canvas id="pdemChart" width="320" height="180"></canvas>
+      </div>
+
+      <div class="inst inst--right">
+        <div class="modebox">
+          <div class="eyebrow">Drive mode</div>
+          <div class="modebox__name" id="modeVal">STANDSTILL</div>
+          <div class="modebox__idx">mode <b id="modeIdx">0</b> · <span id="transNote">idle</span></div>
         </div>
-        <div class="chart-card">
-          <h3>Bateria (SOC)</h3>
-          <p>`SOC` em percentual</p>
-          <canvas id="socChart" width="320" height="180"></canvas>
+        <div class="lamps">
+          <div class="lamp" id="enMot"><span class="lamp__dot"></span><span class="lamp__lbl">MOT</span></div>
+          <div class="lamp" id="enGen"><span class="lamp__dot"></span><span class="lamp__lbl">GEN</span></div>
+          <div class="lamp" id="enIce"><span class="lamp__dot"></span><span class="lamp__lbl">ICE</span></div>
         </div>
-        <div class="chart-card">
-          <h3>Linha do modo</h3>
-          <p>Troca entre STANDSTILL, EV, REGEN, START e HYBRID</p>
-          <canvas id="modeChart" width="320" height="180"></canvas>
+        <div class="eng" id="engBox">
+          <div class="eng__head">
+            <span class="eng__lbl">Engine speed · ICE · wEng</span>
+            <span class="eng__state" id="engState">OFF</span>
+          </div>
+          <div class="eng__read"><b id="engRpmRead">0</b><span>rpm</span></div>
+          <div class="eng__bar"><div class="eng__band" title="ENG_OFF 790 → ENG_ON 800 rpm"></div><div class="eng__fill" id="engFill"></div></div>
+          <div class="eng__note" id="engNote">supervisor input · ENG_ON 800 / ENG_OFF 790 rpm</div>
         </div>
+        <div class="flow" id="flowLine">System at rest — ready to start.</div>
       </div>
     </section>
 
-    <div class="grid">
+    <!-- MODE RAIL -->
+    <div class="rail">
+      <div class="rail__track" id="railTrack">
+        <div class="rail__marker" id="railMarker"></div>
+      </div>
+    </div>
+
+    <!-- CONTROL DECK -->
+    <div class="deck">
       <section class="card">
-        <h2>Entradas</h2>
-        <div class="inputs-grid">
-          <div>
-            <label for="speed">Velocidade (`speed`)</label>
-            <input id="speed" type="number" value="0" step="0.1" />
-          </div>
-          <div>
-            <label for="pdem">Demanda de potência (`P_dem`)</label>
-            <input id="pdem" type="number" value="0" step="0.1" />
-          </div>
-          <div>
-            <label for="soc">SOC (`SOC`)</label>
-            <input id="soc" type="number" value="0.40" step="0.01" min="0" max="1" />
-          </div>
-          <div>
-            <label for="weng">Velocidade do motor (`wEng`)</label>
-            <input id="weng" type="number" value="0" step="1" />
-          </div>
+        <p class="card__title">Inputs</p>
+        <div class="field">
+          <div class="field__top"><span class="field__lbl">Speed <var>speed</var></span><span class="field__fx" id="speedFx"></span></div>
+          <div class="field__row"><input type="range" id="speedRange" min="0" max="140" step="0.1" value="0" /><input type="number" id="speed" value="0" step="0.1" /></div>
+          <div class="ticks" id="speedTicks"></div>
         </div>
-
-        <div class="buttons">
-          <button id="initBtn">Inicializar</button>
-          <button id="stepBtn">Executar Step</button>
-          <button id="driveCycleBtn" class="secondary">Rodar ciclo real</button>
-          <button id="minuteCycleBtn" class="secondary">Rodar ciclo real de 1 minuto</button>
-          <button id="evScenarioBtn" class="secondary">Cenário EV</button>
-          <button id="regenScenarioBtn" class="secondary">Cenário Regen</button>
-          <button id="clearBtn" class="warn">Limpar histórico</button>
+        <div class="field">
+          <div class="field__top"><span class="field__lbl">Power demand <var>P_dem</var></span><span class="field__fx" id="pdemFx"></span></div>
+          <div class="field__row"><input type="range" id="pdemRange" min="-20" max="80" step="0.1" value="0" /><input type="number" id="pdem" value="0" step="0.1" /></div>
+          <div class="ticks" id="pdemTicks"></div>
         </div>
-
-        <p class="note">
-          Observação: a lógica replica fielmente o C (`ModeLogic_Step`). A cada passo as entradas físicas são quantizadas para o fixed-point e a saída já reflete o modo resultante da transição, no mesmo passo — não há defasagem de um ciclo.
-        </p>
+        <div class="field">
+          <div class="field__top"><span class="field__lbl">State of charge <var>SOC</var></span><span class="field__fx" id="socFx"></span></div>
+          <div class="field__row"><input type="range" id="socRange" min="0" max="100" step="0.1" value="40" /><input type="number" id="soc" value="40" step="0.1" /></div>
+          <div class="ticks" id="socTicks"></div>
+        </div>
+        <div class="field">
+          <div class="field__top"><span class="field__lbl">Engine speed (ICE) <var>wEng</var></span><span class="field__fx" id="wengFx"></span></div>
+          <div class="field__row"><input type="range" id="wengRange" min="0" max="7000" step="1" value="0" /><input type="number" id="weng" value="0" step="1" /></div>
+          <div class="ticks" id="wengTicks"></div>
+        </div>
       </section>
 
       <section class="card">
-        <h2>Estado atual</h2>
-        <div class="pill">
-          <strong>Modo atual</strong>
-          <span id="modeBadge" class="mode-badge">MODE_STANDSTILL</span>
+        <p class="card__title">Commands</p>
+        <div class="bar-row">
+          <button id="stepBtn" class="primary">▸ Step</button>
+          <button id="resetBtn" class="ghost">⟲ Reset</button>
+          <div class="sep"></div>
+          <button id="driveCycleBtn">Short cycle</button>
+          <button id="minuteCycleBtn">1-min cycle</button>
         </div>
-
-        <div class="status">
-          <div class="pill"><strong>Mot_Enable</strong><span id="motEnable">0</span></div>
-          <div class="pill"><strong>Gen_Enable</strong><span id="genEnable">0</span></div>
-          <div class="pill"><strong>ICE_Enable</strong><span id="iceEnable">0</span></div>
-          <div class="pill"><strong>Passos</strong><span id="stepCount">0</span></div>
+        <div class="bar-row" id="presetRow" style="margin-top:9px;">
+          <span class="field__fx" style="align-self:center;">Presets</span>
+          <button class="chip" id="scEv">EV</button>
+          <button class="chip" id="scRegen">Regen</button>
+          <button class="chip" id="scStart">Start</button>
+          <button class="chip" id="scIce">ICE</button>
+          <button class="chip" id="scHybrid">Hybrid</button>
+          <button class="chip danger" id="clearBtn" style="margin-left:auto;">Clear</button>
         </div>
-
-        <h3 style="margin-top:16px;">Limiares do modelo</h3>
-        <ul class="list">
-          <li>`ENG_ON = 800.0` — partida do motor térmico</li>
-          <li>`ENG_OFF = 790.0` — desligamento do motor</li>
-          <li>`SPEED_STOP = 0.5` — parada / retorno para StandStill</li>
-          <li>`SPEED_REGEN = 5.0` — entrada/saída de RegenB</li>
-          <li>`SPEED_EV_MAX = 35.0` — limite superior da faixa EV</li>
-          <li>`PDEM_REGEN = -5.0` — limiar de frenagem regenerativa</li>
-          <li>`PDEM_STOP_LOW = -1.0` — faixa neutra inferior</li>
-          <li>`PDEM_STOP_HIGH = 1.0` — faixa neutra superior</li>
-          <li>`PDEM_HYB_IN = 50.0` — EV/RegenB para Motion_mode_ICE</li>
-          <li>`PDEM_HYB_OUT = 40.0` — Motion_mode_ICE para EV</li>
-          <li>`PDEM_HYB_MID = 15.0` — Start/ICE para Hybrid</li>
-          <li>`PDEM_HYB_LOW = 10.0` — Hybrid para ICE</li>
-          <li>`SOC_EV_IN = 0.37` — entrada/manutenção em EV</li>
-          <li>`SOC_EV_OUT = 0.35` — saída de EV para Motion_mode_ICE</li>
-          <li>`SOC_MID = 0.30` — divisão Hybrid × ICE</li>
-          <li>`SOC_LOW = 0.25` — queda de Hybrid para ICE</li>
-        </ul>
+        <p class="cmd-note"><kbd>Space</kbd> step <span>·</span> <kbd>R</kbd> reset</p>
+        <div class="phase">
+          <div class="phase__label">Phase <b id="phaseLabel">manual</b> · step <b id="stepCount">0</b></div>
+          <div class="progress"><i id="progressBar"></i></div>
+        </div>
       </section>
     </div>
 
-    <section class="card" style="margin-top:16px;">
-      <h2>Histórico da simulação</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Modo</th>
-            <th>speed</th>
-            <th>P_dem</th>
-            <th>SOC</th>
-            <th>wEng</th>
-            <th>Mot</th>
-            <th>Gen</th>
-            <th>ICE</th>
-          </tr>
-        </thead>
-        <tbody id="historyBody"></tbody>
-      </table>
-    </section>
+    <!-- DATA ZONE -->
+    <div class="data">
+      <section class="card">
+        <p class="card__title">Telemetry</p>
+        <div class="charts">
+          <div class="chart"><h3><span class="dot" style="background:var(--m-ev)"></span>Speed</h3><p>km/h</p><canvas id="speedChart"></canvas></div>
+          <div class="chart"><h3><span class="dot" style="background:var(--m-ice)"></span>Power</h3><p>kW · traction / regen</p><canvas id="pdemChart"></canvas></div>
+          <div class="chart"><h3><span class="dot" style="background:var(--m-regen)"></span>Charge</h3><p>SOC · %</p><canvas id="socChart"></canvas></div>
+          <div class="chart"><h3><span class="dot" style="background:var(--m-hyb)"></span>Mode</h3><p>transition track</p><canvas id="modeChart"></canvas></div>
+        </div>
+      </section>
+
+      <div class="data-2">
+        <section class="card">
+          <p class="card__title">Session log</p>
+          <div class="log-wrap">
+            <table>
+              <thead><tr><th>#</th><th>Mode</th><th>speed</th><th>P_dem</th><th>SOC</th><th>wEng</th><th>MOT</th><th>GEN</th><th>ICE</th></tr></thead>
+              <tbody id="historyBody"></tbody>
+            </table>
+          </div>
+        </section>
+        <section class="card">
+          <p class="card__title">Fixed-point thresholds</p>
+          <ul class="thresholds" id="thresholds"></ul>
+        </section>
+      </div>
+    </div>
+
+    <p class="foot">
+      Logic in <code>mode_logic.js</code> — faithful port of <code>src/mode_logic_team.c</code>, gated by
+      <code>verification/js_equivalence/</code>. Opens in any browser; no build.
+    </p>
   </div>
 
+  <script src="./mode_logic.js"></script>
   <script>
-    const MODE_STANDSTILL = 0;
-    const MODE_EV = 1;
-    const MODE_REGENB = 2;
-    const MODE_START = 3;
-    const MODE_ICE = 4;
-    const MODE_HYBRID = 5;
+    'use strict';
+    const ML = window.ModeLogic;
+    const T = ML.thresholds;
 
-    // Fixed-point thresholds — mirror inc/mode_logic_team.h exactly.
-    const ENG_ON_RPM = 800;
-    const ENG_OFF_RPM = 790;
-    const SPEED_STOP_DKPH = 5;
-    const SPEED_REGEN_DKPH = 50;
-    const SPEED_EV_MAX_DKPH = 350;
-    const PDEM_REGEN_DKW = -50;
-    const PDEM_STOP_LOW_DKW = -10;
-    const PDEM_STOP_HIGH_DKW = 10;
-    const PDEM_HYB_IN_DKW = 500;
-    const PDEM_HYB_OUT_DKW = 400;
-    const PDEM_HYB_MID_DKW = 150;
-    const PDEM_HYB_LOW_DKW = 100;
-    const SOC_EV_IN_Q10000 = 3700;
-    const SOC_EV_OUT_Q10000 = 3500;
-    const SOC_LOW_Q10000 = 2500;
-    const SOC_MID_Q10000 = 3000;
+    function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+    const MODE_COLOR = ['--m-stop', '--m-ev', '--m-regen', '--m-start', '--m-ice', '--m-hyb'].map(css);
 
-    const U16_MAX_D = 65535.0;
-    const S16_MAX_D = 32767.0;
-    const S16_MIN_D = -32768.0;
-
-    const MODE_NAMES = {
-      [MODE_STANDSTILL]: 'MODE_STANDSTILL',
-      [MODE_EV]: 'MODE_EV',
-      [MODE_REGENB]: 'MODE_REGENB',
-      [MODE_START]: 'MODE_START',
-      [MODE_ICE]: 'MODE_ICE',
-      [MODE_HYBRID]: 'MODE_HYBRID'
+    const FLOW = {
+      0: 'System at rest — ready to start.',
+      1: 'Flow: <b>battery → e-motor → wheels</b>.',
+      2: 'Flow: <b>wheels → e-motor → battery</b> (regen).',
+      3: 'Flow: generator assists cranking; <b>e-motor</b> holds traction. Cranking — awaiting <b>wEng &gt; 800</b> (plant closes this loop in the full model).',
+      4: 'Flow: <b>engine → wheels</b>.',
+      5: 'Flow: <b>engine + e-motor → wheels</b>.'
     };
 
-    const MODE_SHORT_NAMES = {
-      [MODE_STANDSTILL]: 'STOP',
-      [MODE_EV]: 'EV',
-      [MODE_REGENB]: 'REGEN',
-      [MODE_START]: 'START',
-      [MODE_ICE]: 'ICE',
-      [MODE_HYBRID]: 'HYB'
-    };
-
-    // ===== Faithful port of src/mode_logic_team.c =====
-    // Inputs are quantized to the fixed-point API with the same to_u16/to_s16
-    // rule as verification/simulink_c_equivalence.c, then the integer guards
-    // run unchanged. Validated bit-exact against the C (265-row Simulink
-    // replay + 8000-row randomized differential, 0 mismatches).
-
-    function toU16(physical, scale) {
-      const scaled = (physical * scale) + 0.5;
-      if (!(scaled > 0.0)) { return 0; }
-      if (scaled >= U16_MAX_D) { return U16_MAX_D; }
-      return Math.trunc(scaled);
-    }
-
-    function toS16(physical, scale) {
-      let scaled = physical * scale;
-      scaled = (scaled >= 0.0) ? (scaled + 0.5) : (scaled - 0.5);
-      if (scaled >= S16_MAX_D) { return S16_MAX_D; }
-      if (scaled <= S16_MIN_D) { return S16_MIN_D; }
-      return Math.trunc(scaled);
-    }
-
-    function toFixedPoint(input) {
-      return {
-        speed_dkph: toU16(input.speed, 10.0),
-        p_dem_dkw: toS16(input.P_dem, 10.0),
-        soc_q10000: toU16(input.SOC, 10000.0),
-        weng_rpm: toU16(input.wEng, 1.0)
-      };
-    }
-
-    function guardStandstillToEv(fx) {
-      return (fx.speed_dkph > SPEED_STOP_DKPH) &&
-             (fx.speed_dkph <= SPEED_EV_MAX_DKPH) &&
-             (fx.soc_q10000 >= SOC_EV_IN_Q10000);
-    }
-
-    function guardStandstillToStart(fx) {
-      return fx.speed_dkph > SPEED_STOP_DKPH;
-    }
-
-    function guardToRegenb(fx) {
-      return (fx.speed_dkph > SPEED_REGEN_DKPH) &&
-             (fx.p_dem_dkw <= PDEM_REGEN_DKW);
-    }
-
-    function guardEvToStart(fx) {
-      return (fx.speed_dkph > SPEED_EV_MAX_DKPH) ||
-             (fx.p_dem_dkw >= PDEM_HYB_IN_DKW) ||
-             (fx.soc_q10000 < SOC_EV_OUT_Q10000);
-    }
-
-    function guardToStandstill(fx) {
-      return (fx.speed_dkph <= SPEED_STOP_DKPH) &&
-             (fx.p_dem_dkw <= PDEM_STOP_HIGH_DKW) &&
-             (fx.p_dem_dkw >= PDEM_STOP_LOW_DKW);
-    }
-
-    function guardRegenbToStart(fx) {
-      const highSpeedPositiveDemand =
-        (fx.speed_dkph > SPEED_EV_MAX_DKPH) && (fx.p_dem_dkw >= PDEM_STOP_LOW_DKW);
-      return highSpeedPositiveDemand || (fx.soc_q10000 < SOC_EV_OUT_Q10000);
-    }
-
-    function guardRegenbToEv(fx) {
-      return (fx.p_dem_dkw >= PDEM_STOP_LOW_DKW) &&
-             (fx.speed_dkph > SPEED_STOP_DKPH);
-    }
-
-    function guardMotionToEv(fx) {
-      return (fx.weng_rpm > ENG_ON_RPM) &&
-             (fx.p_dem_dkw <= PDEM_HYB_OUT_DKW) &&
-             (fx.p_dem_dkw >= PDEM_STOP_LOW_DKW) &&
-             (fx.speed_dkph > SPEED_STOP_DKPH) &&
-             (fx.speed_dkph <= SPEED_EV_MAX_DKPH) &&
-             (fx.soc_q10000 >= SOC_EV_IN_Q10000);
-    }
-
-    function guardStartToHybrid(fx) {
-      const highLoad = (fx.speed_dkph > SPEED_EV_MAX_DKPH) ||
-                       (fx.p_dem_dkw >= PDEM_HYB_MID_DKW);
-      return (fx.weng_rpm > ENG_ON_RPM) &&
-             (fx.soc_q10000 >= SOC_MID_Q10000) &&
-             highLoad;
-    }
-
-    function guardStartToIce(fx) {
-      return fx.weng_rpm > ENG_ON_RPM;
-    }
-
-    function guardIceToHybrid(fx) {
-      return (fx.p_dem_dkw >= PDEM_HYB_MID_DKW) &&
-             (fx.soc_q10000 >= SOC_MID_Q10000);
-    }
-
-    function guardHybridToIce(fx) {
-      return (fx.p_dem_dkw <= PDEM_HYB_LOW_DKW) ||
-             (fx.soc_q10000 < SOC_LOW_Q10000);
-    }
-
-    function flagWengGtOn(fx) { return fx.weng_rpm > ENG_ON_RPM; }
-    function flagWengLeOff(fx) { return fx.weng_rpm <= ENG_OFF_RPM; }
-
-    function handleStandstill(fx) {
-      if (guardStandstillToEv(fx)) { return MODE_EV; }
-      if (guardStandstillToStart(fx)) { return MODE_START; }
-      return MODE_STANDSTILL;
-    }
-
-    function handleEv(fx) {
-      if (guardToRegenb(fx)) { return MODE_REGENB; }
-      if (guardEvToStart(fx)) { return MODE_START; }
-      if (guardToStandstill(fx)) { return MODE_STANDSTILL; }
-      return MODE_EV;
-    }
-
-    function handleRegenb(fx) {
-      if (guardRegenbToStart(fx)) { return MODE_START; }
-      if (guardToStandstill(fx)) { return MODE_STANDSTILL; }
-      if (guardRegenbToEv(fx)) { return MODE_EV; }
-      return MODE_REGENB;
-    }
-
-    function motionIceCommonExit(fx, currentInBlock) {
-      const toRegenb = flagWengGtOn(fx) && guardToRegenb(fx);
-      if (toRegenb) { return MODE_REGENB; }
-      if (guardMotionToEv(fx)) { return MODE_EV; }
-      if (guardToStandstill(fx)) { return MODE_STANDSTILL; }
-      return currentInBlock;
-    }
-
-    function internalMotionIceReset(fx, currentInBlock) {
-      if (flagWengLeOff(fx)) { return MODE_START; }
-      return currentInBlock;
-    }
-
-    function handleStart(fx) {
-      let next = motionIceCommonExit(fx, MODE_START);
-      if (next === MODE_START) {
-        if (guardStartToHybrid(fx)) { next = MODE_HYBRID; }
-        else if (guardStartToIce(fx)) { next = MODE_ICE; }
-      }
-      return next;
-    }
-
-    function handleIce(fx) {
-      let next = motionIceCommonExit(fx, MODE_ICE);
-      if (next === MODE_ICE) { next = internalMotionIceReset(fx, next); }
-      if (next === MODE_ICE) {
-        if (guardIceToHybrid(fx)) { next = MODE_HYBRID; }
-      }
-      return next;
-    }
-
-    function handleHybrid(fx) {
-      let next = motionIceCommonExit(fx, MODE_HYBRID);
-      if (next === MODE_HYBRID) { next = internalMotionIceReset(fx, next); }
-      if (next === MODE_HYBRID) {
-        if (guardHybridToIce(fx)) { next = MODE_ICE; }
-      }
-      return next;
-    }
-
-    function modeLogicStep(currentMode, fx) {
-      switch (currentMode) {
-        case MODE_STANDSTILL: return handleStandstill(fx);
-        case MODE_EV: return handleEv(fx);
-        case MODE_REGENB: return handleRegenb(fx);
-        case MODE_START: return handleStart(fx);
-        case MODE_ICE: return handleIce(fx);
-        case MODE_HYBRID: return handleHybrid(fx);
-        default: return MODE_STANDSTILL;
-      }
-    }
-
-    function writeOutputs(mode) {
-      switch (mode) {
-        case MODE_EV: return { Mot_Enable: 1, Gen_Enable: 0, ICE_Enable: 0 };
-        case MODE_REGENB: return { Mot_Enable: 1, Gen_Enable: 0, ICE_Enable: 0 };
-        case MODE_START: return { Mot_Enable: 1, Gen_Enable: 1, ICE_Enable: 0 };
-        case MODE_ICE: return { Mot_Enable: 0, Gen_Enable: 1, ICE_Enable: 1 };
-        case MODE_HYBRID: return { Mot_Enable: 1, Gen_Enable: 1, ICE_Enable: 1 };
-        case MODE_STANDSTILL:
-        default: return { Mot_Enable: 0, Gen_Enable: 0, ICE_Enable: 0 };
-      }
-    }
-
-    let driveCycleTimer = null;
-    let driveCycleFrames = [];
-    let driveCycleIndex = 0;
-    let minuteCycleTimer = null;
-    let minuteCycleStartTime = 0;
-
-    const gaugeDisplay = {
-      speed: 0,
-      rpm: 0,
-      animationId: null
-    };
-
+    // ---- state ----
     const sim = {
-      state: { current_mode: MODE_STANDSTILL },
+      mode: ML.MODE_STANDSTILL,
       outputs: { Mot_Enable: 0, Gen_Enable: 0, ICE_Enable: 0 },
-      stepCounter: 0,
+      step: 0,
+      phase: 'manual',
+      progress: 0,
       lastInput: { speed: 0, P_dem: 0, SOC: 0.40, wEng: 0 },
-      currentPhase: 'Aguardando comando',
-      cycleProgress: 0,
-      telemetry: [],
-
-      init(options = {}) {
-        this.state.current_mode = MODE_STANDSTILL;
-        this.outputs = { Mot_Enable: 0, Gen_Enable: 0, ICE_Enable: 0 };
-        this.stepCounter = 0;
-        this.lastInput = getInputs();
-        this.currentPhase = options.phaseLabel || 'Inicialização manual';
-        this.cycleProgress = options.cycleProgress || 0;
-        this.telemetry = [];
-        addTelemetryPoint(this.lastInput);
-        render();
-        addHistoryRow(this.lastInput);
-      },
-
-      step(input, phaseLabel = 'Execução manual', progress = this.cycleProgress) {
-        const fx = toFixedPoint(input);
-        const next = modeLogicStep(this.state.current_mode, fx);
-        this.state.current_mode = next;
-        this.outputs = writeOutputs(next);
-
-        this.lastInput = { ...input };
-        this.currentPhase = phaseLabel;
-        this.cycleProgress = progress;
-        this.stepCounter += 1;
-        addTelemetryPoint(input);
-        render();
-        addHistoryRow(input);
-      }
+      lastTransition: null,
+      telemetry: []
     };
 
-    function getInputs() {
-      return {
-        speed: Number(document.getElementById('speed').value),
-        P_dem: Number(document.getElementById('pdem').value),
-        SOC: Number(document.getElementById('soc').value),
-        wEng: Number(document.getElementById('weng').value)
-      };
+    // ================= mode rail =================
+    function buildRail() {
+      const track = document.getElementById('railTrack');
+      for (let m = 0; m <= 5; m++) {
+        const seg = document.createElement('div');
+        seg.className = 'rseg';
+        seg.id = 'rseg' + m;
+        seg.style.setProperty('--c', MODE_COLOR[m]);
+        seg.innerHTML = '<span class="rseg__n">' + ML.STATE_NAMES[m] + '</span><span class="rseg__i">mode ' + m + '</span>';
+        track.appendChild(seg);
+      }
     }
-
-    function setInputFields(values) {
-      document.getElementById('speed').value = values.speed;
-      document.getElementById('pdem').value = values.P_dem;
-      document.getElementById('soc').value = values.SOC;
-      document.getElementById('weng').value = values.wEng;
-    }
-
-    function interpolate(from, to, ratio) {
-      return from + (to - from) * ratio;
-    }
-
-    function easeInOutSine(value) {
-      return -(Math.cos(Math.PI * value) - 1) / 2;
-    }
-
-    function buildMinuteCycleSegments() {
-      return [
-        { start: 0, end: 5, label: '0-5s | Saída suave em modo elétrico', from: { speed: 0, P_dem: 4, SOC: 0.62, wEng: 0 }, to: { speed: 30, P_dem: 20, SOC: 0.60, wEng: 500 } },
-        { start: 5, end: 10, label: '5-10s | Aceleração forte até 80 km/h', from: { speed: 30, P_dem: 20, SOC: 0.60, wEng: 500 }, to: { speed: 80, P_dem: 68, SOC: 0.56, wEng: 2000 } },
-        { start: 10, end: 15, label: '10-15s | Subida final até 120 km/h', from: { speed: 80, P_dem: 60, SOC: 0.56, wEng: 2000 }, to: { speed: 120, P_dem: 55, SOC: 0.52, wEng: 3200 } },
-        { start: 15, end: 20, label: '15-20s | Desaceleração até 30 km/h', from: { speed: 120, P_dem: -4, SOC: 0.52, wEng: 3200 }, to: { speed: 30, P_dem: -18, SOC: 0.55, wEng: 1200 } },
-        { start: 20, end: 28, label: '20-28s | Nova aceleração até 100 km/h', from: { speed: 30, P_dem: 14, SOC: 0.55, wEng: 1200 }, to: { speed: 100, P_dem: 58, SOC: 0.51, wEng: 2800 } },
-        { start: 28, end: 33, label: '28-33s | Aumento até 120 km/h', from: { speed: 100, P_dem: 42, SOC: 0.51, wEng: 2800 }, to: { speed: 120, P_dem: 52, SOC: 0.49, wEng: 4200 } },
-        { start: 33, end: 38, label: '33-38s | Redução suave até 60 km/h', from: { speed: 120, P_dem: -6, SOC: 0.49, wEng: 4200 }, to: { speed: 60, P_dem: -12, SOC: 0.51, wEng: 2100 } },
-        { start: 38, end: 46, label: '38-46s | Retomada até 100 km/h', from: { speed: 60, P_dem: 20, SOC: 0.51, wEng: 2100 }, to: { speed: 100, P_dem: 50, SOC: 0.48, wEng: 3100 } },
-        { start: 46, end: 50, label: '46-50s | Pico rápido em 120 km/h', from: { speed: 100, P_dem: 44, SOC: 0.48, wEng: 3100 }, to: { speed: 120, P_dem: 55, SOC: 0.46, wEng: 4800 } },
-        { start: 50, end: 55, label: '50-55s | Tráfego mais lento até 40 km/h', from: { speed: 120, P_dem: -5, SOC: 0.46, wEng: 4800 }, to: { speed: 40, P_dem: -14, SOC: 0.48, wEng: 1500 } },
-        { start: 55, end: 60, label: '55-60s | Fechamento com retomada leve', from: { speed: 40, P_dem: 8, SOC: 0.48, wEng: 1500 }, to: { speed: 70, P_dem: 30, SOC: 0.45, wEng: 2600 } }
-      ];
-    }
-
-    function getMinuteCycleFrame(elapsedSeconds) {
-      const segments = buildMinuteCycleSegments();
-      const segment = segments.find((item) => elapsedSeconds >= item.start && elapsedSeconds < item.end) || segments[segments.length - 1];
-      const localRatio = Math.max(0, Math.min(1, (elapsedSeconds - segment.start) / Math.max(0.001, segment.end - segment.start)));
-      const eased = easeInOutSine(localRatio);
-
-      return {
-        label: `${segment.label} | ${elapsedSeconds.toFixed(1)}s / 60s`,
-        speed: interpolate(segment.from.speed, segment.to.speed, eased),
-        P_dem: interpolate(segment.from.P_dem, segment.to.P_dem, eased),
-        SOC: interpolate(segment.from.SOC, segment.to.SOC, eased),
-        wEng: interpolate(segment.from.wEng, segment.to.wEng, eased)
-      };
-    }
-
-    function addTelemetryPoint(input) {
-      sim.telemetry.push({
-        step: sim.stepCounter,
-        speed: input.speed,
-        P_dem: input.P_dem,
-        SOC: input.SOC * 100,
-        mode: sim.state.current_mode
-      });
-
-      if (sim.telemetry.length > 80) {
-        sim.telemetry.shift();
+    function paintRail() {
+      for (let m = 0; m <= 5; m++) {
+        document.getElementById('rseg' + m).classList.toggle('on', m === sim.mode);
+      }
+      const active = document.getElementById('rseg' + sim.mode);
+      const marker = document.getElementById('railMarker');
+      marker.style.left = active.offsetLeft + 'px';
+      marker.style.width = active.offsetWidth + 'px';
+      if (sim.lastTransition) {
+        marker.classList.remove('pulse'); void marker.offsetWidth; marker.classList.add('pulse');
       }
     }
 
-    function getCanvasContext(canvasId, preferredHeight = 180) {
-      const canvas = document.getElementById(canvasId);
-      if (!canvas) {
-        return null;
-      }
+    // ================= speedometer (vehicle speed only) =================
+    function drawSpeedo(speed) {
+      const cv = document.getElementById('speedo');
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const L = Math.max(200, Math.min(300, Math.floor(cv.getBoundingClientRect().width || 280)));
+      const px = Math.round(L * dpr);
+      if (cv.width !== px) { cv.width = px; cv.height = px; }
+      const ctx = cv.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, L, L);
 
-      const targetWidth = Math.max(220, Math.floor(canvas.getBoundingClientRect().width || canvas.width || 320));
-      const targetHeight = preferredHeight;
-      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-      }
+      const cx = L / 2, cy = L / 2, rOut = L * 0.44;
+      const a0 = Math.PI * 0.75, a1 = Math.PI * 2.25;   // 270°, gap at bottom
+      const col = MODE_COLOR[sim.mode];
+      ctx.lineCap = 'round';
 
-      return canvas.getContext('2d');
-    }
+      // speed track + value arc
+      ctx.lineWidth = L * 0.035;
+      ctx.strokeStyle = css('--line');
+      ctx.beginPath(); ctx.arc(cx, cy, rOut, a0, a1); ctx.stroke();
+      const sMax = 160, sv = Math.max(0, Math.min(sMax, speed));
+      ctx.strokeStyle = col;
+      ctx.beginPath(); ctx.arc(cx, cy, rOut, a0, a0 + (sv / sMax) * (a1 - a0)); ctx.stroke();
 
-    function drawGauge(canvasId, value, min, max, label, unit, zones = []) {
-      const ctx = getCanvasContext(canvasId, 220);
-      if (!ctx) {
-        return;
-      }
-
-      const { width, height } = ctx.canvas;
-      const cx = width / 2;
-      const cy = height / 2;
-      const radius = Math.min(width * 0.32, height * 0.42);
-      const startAngle = Math.PI * 0.75;
-      const endAngle = Math.PI * 2.25;
-
-      ctx.clearRect(0, 0, width, height);
-
-      ctx.lineWidth = 14;
-      ctx.strokeStyle = '#1e293b';
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, startAngle, endAngle);
-      ctx.stroke();
-
-      zones.forEach((zone) => {
-        const zoneStart = startAngle + ((zone.from - min) / (max - min)) * (endAngle - startAngle);
-        const zoneEnd = startAngle + ((zone.to - min) / (max - min)) * (endAngle - startAngle);
-        ctx.strokeStyle = zone.color;
+      // precision ticks
+      ctx.strokeStyle = css('--dimmer');
+      for (let i = 0; i <= 8; i++) {
+        const a = a0 + (i / 8) * (a1 - a0), major = (i % 2 === 0);
+        const r1 = rOut - L * 0.055, r2 = rOut - (major ? L * 0.10 : L * 0.082);
+        ctx.lineWidth = major ? 1.6 : 1;
         ctx.beginPath();
-        ctx.arc(cx, cy, radius, zoneStart, zoneEnd);
+        ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+        ctx.lineTo(cx + Math.cos(a) * r2, cy + Math.sin(a) * r2);
         ctx.stroke();
-      });
-
-      let tickValues = [];
-      if (unit === 'rpm') {
-        for (let i = 0; i <= max; i += 1000) {
-          if (i >= min) {
-            tickValues.push(i);
-          }
-        }
-      } else if (unit === 'km/h') {
-        for (let i = 0; i <= max; i += 20) {
-          if (i >= min) {
-            tickValues.push(i);
-          }
-        }
-      } else {
-        for (let i = 0; i <= 6; i += 1) {
-          tickValues.push(min + (i / 6) * (max - min));
-        }
       }
 
-      tickValues.forEach((tickValue) => {
-        const ratio = (tickValue - min) / (max - min);
-        const angle = startAngle + ratio * (endAngle - startAngle);
-        const inner = radius - 18;
-        const outer = radius + 2;
-        const x1 = cx + Math.cos(angle) * inner;
-        const y1 = cy + Math.sin(angle) * inner;
-        const x2 = cx + Math.cos(angle) * outer;
-        const y2 = cy + Math.sin(angle) * outer;
-
-        ctx.strokeStyle = '#94a3b8';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-
-        const tx = cx + Math.cos(angle) * (radius - 34);
-        const ty = cy + Math.sin(angle) * (radius - 34);
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = '10px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${Math.round(tickValue)}`, tx, ty + 3);
-      });
-
-      const clamped = Math.max(min, Math.min(max, value));
-      const valueAngle = startAngle + ((clamped - min) / (max - min)) * (endAngle - startAngle);
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(valueAngle);
-      ctx.strokeStyle = '#f8fafc';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(-10, 0);
-      ctx.lineTo(radius - 18, 0);
-      ctx.stroke();
-      ctx.restore();
-
-      ctx.fillStyle = '#38bdf8';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 6, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = 'bold 13px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(label, cx, cy - radius - 32);
-      ctx.font = 'bold 18px Arial';
-      ctx.fillText(`${value.toFixed(unit === 'rpm' ? 0 : 1)} ${unit}`, cx, cy + radius + 24);
+      // scale end labels
+      ctx.fillStyle = css('--dimmer'); ctx.font = '9px ui-monospace, monospace'; ctx.textAlign = 'center';
+      ctx.fillText('0', cx + Math.cos(a0) * (rOut + 8), cy + Math.sin(a0) * (rOut + 8) + 3);
+      ctx.fillText('160', cx + Math.cos(a1) * (rOut + 8), cy + Math.sin(a1) * (rOut + 8) + 3);
     }
 
-    function renderGauges(speedValue = sim.lastInput.speed || 0, rpmValue = sim.lastInput.wEng || 0) {
-      drawGauge('speedGauge', speedValue, 0, 260, 'Velocidade', 'km/h', [
-        { from: 0, to: 80, color: '#22c55e' },
-        { from: 80, to: 180, color: '#38bdf8' },
-        { from: 180, to: 260, color: '#f59e0b' }
-      ]);
-
-      drawGauge('rpmGauge', rpmValue, 0, 7000, 'Rotação', 'rpm', [
-        { from: 0, to: 2000, color: '#22c55e' },
-        { from: 2000, to: 5500, color: '#38bdf8' },
-        { from: 5500, to: 7000, color: '#ef4444' }
-      ]);
-
-      document.getElementById('speedReadout').textContent = `${speedValue.toFixed(1)} km/h`;
-      document.getElementById('rpmReadout').textContent = `${rpmValue.toFixed(0)} rpm`;
+    // ================= engine (ICE) instrument =================
+    // wEng is the crankshaft rpm — the only rotational speed the supervisory FSM reads
+    // (via flagWengGtOn: rpm > ENG_ON_RPM, and flagWengLeOff: rpm <= ENG_OFF_RPM). The
+    // e-motor also spins with the wheels, but is NOT a supervisor input, so it is not shown.
+    //
+    // The telltale reflects the supervisor's OUTPUT, not a raw rpm threshold: the engine is
+    // engaged only in ICE/HYBRID (ICE_Enable===1); START is the cranking phase (ICE_Enable===0,
+    // engine spinning up); every electric mode holds the engine off. wEng only changes this at
+    // the FSM's own 790/800 transitions, which surface here as a mode change — so we never
+    // fabricate a "running" engine inside the 790..800 hold band, and never contradict the
+    // ICE lamp. The bar + band marker still visualise wEng against the thresholds.
+    function engineStatus() {
+      if (sim.mode === ML.MODE_START) { return { label: 'CRANKING', cls: 'cranking', col: css('--m-start') }; }
+      if (sim.outputs.ICE_Enable === 1) { return { label: 'RUNNING', cls: 'running', col: css('--m-ice') }; }
+      return { label: 'OFF', cls: '', col: css('--accent-steel') };
+    }
+    function paintEngine() {
+      const s = engineStatus();
+      const chip = document.getElementById('engState');
+      chip.textContent = s.label; chip.className = 'eng__state ' + s.cls;
+      document.getElementById('engFill').style.background = s.col;
+      const movingOff = (s.label === 'OFF') && ((sim.lastInput.speed || 0) > 0.5);
+      const note = document.getElementById('engNote');
+      note.textContent = movingOff
+        ? 'engine off · electric drivetrain active'
+        : 'supervisor input · ENG_ON 800 / ENG_OFF 790 rpm';
+      note.classList.toggle('live', movingOff);
     }
 
+    const gaugeAnim = { speed: 0, rpm: 0, raf: null };
+    function paintEngineMeter(rpm) {
+      document.getElementById('engRpmRead').textContent = Math.round(rpm);
+      document.getElementById('engFill').style.width = Math.max(0, Math.min(100, (rpm / 7000) * 100)) + '%';
+    }
+    function reducedMotion() {
+      return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
     function animateGauges() {
-      const speedTarget = sim.lastInput.speed || 0;
-      const rpmTarget = sim.lastInput.wEng || 0;
-
-      gaugeDisplay.speed += (speedTarget - gaugeDisplay.speed) * 0.14;
-      gaugeDisplay.rpm += (rpmTarget - gaugeDisplay.rpm) * 0.12;
-
-      renderGauges(gaugeDisplay.speed, gaugeDisplay.rpm);
-
-      const speedDiff = Math.abs(speedTarget - gaugeDisplay.speed);
-      const rpmDiff = Math.abs(rpmTarget - gaugeDisplay.rpm);
-
-      if (driveCycleTimer || minuteCycleTimer || speedDiff > 0.15 || rpmDiff > 1.5) {
-        gaugeDisplay.animationId = requestAnimationFrame(animateGauges);
+      const st = sim.lastInput.speed || 0, rt = sim.lastInput.wEng || 0;
+      const reduced = reducedMotion();   // honor the same contract as the CSS media query
+      gaugeAnim.speed += (st - gaugeAnim.speed) * (reduced ? 1 : 0.16);
+      gaugeAnim.rpm += (rt - gaugeAnim.rpm) * (reduced ? 1 : 0.14);
+      drawSpeedo(gaugeAnim.speed);
+      document.getElementById('speedRead').textContent = Math.round(gaugeAnim.speed);
+      paintEngineMeter(gaugeAnim.rpm);
+      if (!reduced && (Math.abs(st - gaugeAnim.speed) > 0.1 || Math.abs(rt - gaugeAnim.rpm) > 1)) {
+        gaugeAnim.raf = requestAnimationFrame(animateGauges);
       } else {
-        gaugeDisplay.speed = speedTarget;
-        gaugeDisplay.rpm = rpmTarget;
-        renderGauges(gaugeDisplay.speed, gaugeDisplay.rpm);
-        gaugeDisplay.animationId = null;
+        gaugeAnim.speed = st; gaugeAnim.rpm = rt;
+        drawSpeedo(st);
+        document.getElementById('speedRead').textContent = Math.round(st);
+        paintEngineMeter(rt);
+        gaugeAnim.raf = null;
       }
     }
+    function ensureGauge() { if (gaugeAnim.raf === null) { gaugeAnim.raf = requestAnimationFrame(animateGauges); } }
 
-    function ensureGaugeAnimation() {
-      if (gaugeDisplay.animationId === null) {
-        gaugeDisplay.animationId = requestAnimationFrame(animateGauges);
-      }
+    // ================= charts =================
+    function fitChart(id, hCss) {
+      const cv = document.getElementById(id);
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const wCss = Math.max(180, Math.floor(cv.getBoundingClientRect().width || 260));
+      const w = Math.round(wCss * dpr), h = Math.round(hCss * dpr);
+      if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+      const ctx = cv.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx: ctx, W: wCss, H: hCss };
     }
 
-    function drawLineChart(canvasId, values, color, options = {}) {
-      const ctx = getCanvasContext(canvasId);
-      if (!ctx) {
-        return;
+    function lineChart(id, values, color, opts) {
+      opts = opts || {};
+      const f = fitChart(id, 104), ctx = f.ctx, W = f.W, H = f.H;
+      const pad = { t: 10, r: 8, b: 14, l: 30 };
+      ctx.clearRect(0, 0, W, H);
+      ctx.strokeStyle = css('--line-soft'); ctx.lineWidth = 1;
+      for (let i = 0; i <= 3; i++) {
+        const y = pad.t + ((H - pad.t - pad.b) / 3) * i;
+        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
       }
+      if (!values.length) { return; }
+      let min = opts.min != null ? opts.min : Math.min.apply(null, values);
+      let max = opts.max != null ? opts.max : Math.max.apply(null, values);
+      if (min === max) { min -= 1; max += 1; }
+      const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b, rng = max - min;
+      const X = function (i) { return pad.l + (values.length === 1 ? 0 : (i / (values.length - 1)) * pw); };
+      const Y = function (v) { return pad.t + ph - ((v - min) / rng) * ph; };
 
-      const width = ctx.canvas.width;
-      const height = ctx.canvas.height;
-      const padding = { top: 16, right: 12, bottom: 22, left: 36 };
-      ctx.clearRect(0, 0, width, height);
-
-      ctx.strokeStyle = '#243244';
-      ctx.lineWidth = 1;
-      for (let i = 0; i <= 4; i += 1) {
-        const y = padding.top + ((height - padding.top - padding.bottom) / 4) * i;
-        ctx.beginPath();
-        ctx.moveTo(padding.left, y);
-        ctx.lineTo(width - padding.right, y);
-        ctx.stroke();
+      if (opts.zero && min < 0 && max > 0) {
+        ctx.strokeStyle = css('--dimmer'); ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.moveTo(pad.l, Y(0)); ctx.lineTo(W - pad.r, Y(0)); ctx.stroke();
+        ctx.setLineDash([]);
       }
-
-      if (!values.length) {
-        return;
-      }
-
-      let min = options.min ?? Math.min(...values);
-      let max = options.max ?? Math.max(...values);
-
-      if (min === max) {
-        min -= 1;
-        max += 1;
-      }
-
-      const range = max - min;
-      const plotWidth = width - padding.left - padding.right;
-      const plotHeight = height - padding.top - padding.bottom;
-
-      if (options.zeroLine && min < 0 && max > 0) {
-        const zeroY = padding.top + plotHeight - ((0 - min) / range) * plotHeight;
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.85)';
-        ctx.beginPath();
-        ctx.moveTo(padding.left, zeroY);
-        ctx.lineTo(width - padding.right, zeroY);
-        ctx.stroke();
-      }
-
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-
-      values.forEach((value, index) => {
-        const x = padding.left + (values.length === 1 ? 0 : (index / (values.length - 1)) * plotWidth);
-        const y = padding.top + plotHeight - ((value - min) / range) * plotHeight;
-        if (index === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      });
+      ctx.beginPath(); ctx.moveTo(X(0), Y(values[0]));
+      values.forEach(function (v, i) { ctx.lineTo(X(i), Y(v)); });
+      ctx.lineTo(X(values.length - 1), pad.t + ph); ctx.lineTo(X(0), pad.t + ph); ctx.closePath();
+      ctx.fillStyle = color + '18'; ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+      values.forEach(function (v, i) { i ? ctx.lineTo(X(i), Y(v)) : ctx.moveTo(X(i), Y(v)); });
       ctx.stroke();
+      ctx.fillStyle = color; ctx.beginPath(); ctx.arc(X(values.length - 1), Y(values[values.length - 1]), 2.5, 0, Math.PI * 2); ctx.fill();
 
-      const lastValue = values[values.length - 1];
-      const lastX = padding.left + (values.length === 1 ? 0 : plotWidth);
-      const lastY = padding.top + plotHeight - ((lastValue - min) / range) * plotHeight;
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(lastX, lastY, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '11px Arial';
-      ctx.fillText(`${max.toFixed(1)}`, 6, padding.top + 4);
-      ctx.fillText(`${min.toFixed(1)}`, 6, height - padding.bottom + 4);
-      ctx.fillText(`t=${sim.stepCounter}`, width - 46, height - 6);
+      ctx.fillStyle = css('--dimmer'); ctx.font = '9px ui-monospace, monospace'; ctx.textAlign = 'left';
+      ctx.fillText(max.toFixed(0), 3, pad.t + 4); ctx.fillText(min.toFixed(0), 3, H - pad.b + 4);
     }
 
-    function drawModeChart() {
-      const ctx = getCanvasContext('modeChart');
-      if (!ctx) {
-        return;
+    function modeChart() {
+      const f = fitChart('modeChart', 104), ctx = f.ctx, W = f.W, H = f.H;
+      const pad = { t: 8, r: 8, b: 8, l: 46 };
+      ctx.clearRect(0, 0, W, H);
+      const vals = sim.telemetry.map(function (p) { return p.mode; });
+      const ph = H - pad.t - pad.b, pw = W - pad.l - pad.r;
+      for (let m = 0; m <= 5; m++) {
+        const y = pad.t + ph - (m / 5) * ph;
+        ctx.strokeStyle = css('--line-soft'); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+        ctx.fillStyle = MODE_COLOR[m]; ctx.font = '8px ui-monospace, monospace'; ctx.textAlign = 'left';
+        ctx.fillText(ML.MODE_SHORT_NAMES[m], 3, y + 3);
       }
-
-      const width = ctx.canvas.width;
-      const height = ctx.canvas.height;
-      const padding = { top: 10, right: 12, bottom: 22, left: 48 };
-      ctx.clearRect(0, 0, width, height);
-
-      const values = sim.telemetry.map((point) => point.mode);
-      const plotWidth = width - padding.left - padding.right;
-      const plotHeight = height - padding.top - padding.bottom;
-
-      for (let mode = MODE_STANDSTILL; mode <= MODE_HYBRID; mode += 1) {
-        const y = padding.top + plotHeight - (mode / MODE_HYBRID) * plotHeight;
-        ctx.strokeStyle = '#243244';
-        ctx.beginPath();
-        ctx.moveTo(padding.left, y);
-        ctx.lineTo(width - padding.right, y);
-        ctx.stroke();
-
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '10px Arial';
-        ctx.fillText(MODE_SHORT_NAMES[mode], 6, y + 3);
+      if (!vals.length) { return; }
+      const X = function (i) { return pad.l + (vals.length === 1 ? 0 : (i / (vals.length - 1)) * pw); };
+      const Y = function (v) { return pad.t + ph - (v / 5) * ph; };
+      for (let i = 1; i < vals.length; i++) {
+        ctx.strokeStyle = MODE_COLOR[vals[i]]; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(X(i - 1), Y(vals[i - 1])); ctx.lineTo(X(i), Y(vals[i - 1])); ctx.lineTo(X(i), Y(vals[i])); ctx.stroke();
       }
-
-      if (!values.length) {
-        return;
-      }
-
-      ctx.strokeStyle = '#a78bfa';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-
-      values.forEach((value, index) => {
-        const x = padding.left + (values.length === 1 ? 0 : (index / (values.length - 1)) * plotWidth);
-        const y = padding.top + plotHeight - (value / MODE_HYBRID) * plotHeight;
-        if (index === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      });
-      ctx.stroke();
+      ctx.fillStyle = MODE_COLOR[vals[vals.length - 1]];
+      ctx.beginPath(); ctx.arc(X(vals.length - 1), Y(vals[vals.length - 1]), 2.5, 0, Math.PI * 2); ctx.fill();
     }
 
     function renderCharts() {
-      drawLineChart('speedChart', sim.telemetry.map((point) => point.speed), '#38bdf8', { min: 0 });
-      drawLineChart('pdemChart', sim.telemetry.map((point) => point.P_dem), '#f59e0b', { zeroLine: true });
-      drawLineChart('socChart', sim.telemetry.map((point) => point.SOC), '#22c55e', { min: 0, max: 100 });
-      drawModeChart();
+      lineChart('speedChart', sim.telemetry.map(function (p) { return p.speed; }), MODE_COLOR[1], { min: 0 });
+      lineChart('pdemChart', sim.telemetry.map(function (p) { return p.P_dem; }), MODE_COLOR[4], { zero: true });
+      lineChart('socChart', sim.telemetry.map(function (p) { return p.SOC; }), MODE_COLOR[2], { min: 0, max: 100 });
+      modeChart();
     }
 
-    window.addEventListener('resize', () => {
-      renderGauges();
-      renderCharts();
-    });
+    // ================= inputs =================
+    function num(id) { return Number(document.getElementById(id).value); }
+    function getInputs() { return { speed: num('speed'), P_dem: num('pdem'), SOC: num('soc') / 100, wEng: num('weng') }; }
+    function setInputs(v) {
+      const socPct = (v.SOC != null ? v.SOC * 100 : num('soc'));
+      pairSet('speed', v.speed); pairSet('pdem', v.P_dem); pairSet('soc', socPct); pairSet('weng', v.wEng);
+      updateFx();
+    }
+    function pairSet(id, val) { document.getElementById(id).value = val; document.getElementById(id + 'Range').value = val; }
 
-    function setComponentState(cardId, stateId, active, activeText, inactiveText) {
-      const card = document.getElementById(cardId);
-      const state = document.getElementById(stateId);
-      card.className = 'component';
-      if (active) {
-        card.classList.add('active');
-      }
-      state.textContent = active ? activeText : inactiveText;
+    function updateFx() {
+      const inp = getInputs(), fx = ML.toFixedPoint(inp);
+      document.getElementById('speedFx').innerHTML = inp.speed.toFixed(1) + ' → <b>' + fx.speed_dkph + '</b> dkph';
+      document.getElementById('pdemFx').innerHTML = inp.P_dem.toFixed(1) + ' → <b>' + fx.p_dem_dkw + '</b> dkw';
+      document.getElementById('socFx').innerHTML = (inp.SOC * 100).toFixed(1) + ' → <b>' + fx.soc_q10000 + '</b> q';
+      document.getElementById('wengFx').innerHTML = Math.round(inp.wEng) + ' → <b>' + fx.weng_rpm + '</b>';
     }
 
-    function updateOperationalPanel(input) {
-      const motorActive = sim.outputs.Mot_Enable === 1;
-      const generatorActive = sim.outputs.Gen_Enable === 1;
-      const iceActive = sim.outputs.ICE_Enable === 1;
-
-      setComponentState('motorCard', 'motorState', motorActive, 'Ativo', 'Desligado');
-      setComponentState('generatorCard', 'generatorState', generatorActive, 'Ativo', 'Desligado');
-      setComponentState('iceCard', 'iceState', iceActive, 'Ativo', 'Desligado');
-
-      const pdemDkw = toS16(input.P_dem, 10.0);
-      const batteryCard = document.getElementById('batteryCard');
-      const batteryState = document.getElementById('batteryState');
-      batteryCard.className = 'component';
-
-      if (pdemDkw <= PDEM_REGEN_DKW) {
-        batteryCard.classList.add('charge', 'active');
-        batteryState.textContent = 'Carregando (regen)';
-      } else if (pdemDkw > PDEM_STOP_HIGH_DKW) {
-        batteryCard.classList.add('discharge', 'active');
-        batteryState.textContent = 'Descarregando';
-      } else {
-        batteryState.textContent = 'Estável';
-      }
-
-      let flowText = 'Sistema parado / pronto para iniciar.';
-      if (sim.state.current_mode === MODE_EV) {
-        flowText = 'Fluxo: bateria -> motor elétrico -> rodas';
-      } else if (sim.state.current_mode === MODE_REGENB) {
-        flowText = 'Fluxo: rodas -> motor elétrico -> bateria (frenagem regenerativa)';
-      } else if (sim.state.current_mode === MODE_START) {
-        flowText = 'Fluxo: gerador auxilia a partida e o motor elétrico sustenta a tração';
-      } else if (sim.state.current_mode === MODE_HYBRID) {
-        flowText = 'Fluxo: motor térmico + motor elétrico -> rodas';
-      } else if (sim.state.current_mode === MODE_ICE) {
-        flowText = 'Fluxo: motor térmico -> rodas';
-      }
-
-      document.getElementById('powerFlow').textContent = flowText;
+    function buildTicks() {
+      const specs = {
+        speedTicks: { min: 0, max: 140, marks: [[0.5, 'stop'], [5, 'regen'], [35, 'ev·max']] },
+        pdemTicks: { min: -20, max: 80, marks: [[-5, 'regen'], [1, 'neutral'], [15, 'hyb'], [40, 'ev'], [50, 'ice']] },
+        socTicks: { min: 0, max: 100, marks: [[25, 'low'], [30, 'mid'], [36, 'ev band']] },
+        wengTicks: { min: 0, max: 7000, marks: [[790, 'off'], [800, 'on']] }
+      };
+      Object.keys(specs).forEach(function (id) {
+        const s = specs[id], el = document.getElementById(id);
+        let lastPct = -100;
+        s.marks
+          .map(function (m) { return { pct: ((m[0] - s.min) / (s.max - s.min)) * 100, label: m[1] }; })
+          .sort(function (a, b) { return a.pct - b.pct; })
+          .forEach(function (m) {
+            const lo = (m.pct - lastPct) < 7;
+            lastPct = m.pct;
+            const d = document.createElement('div');
+            d.className = lo ? 'tick lo' : 'tick';
+            d.style.left = m.pct + '%';
+            d.innerHTML = '<i></i><span>' + m.label + '</span>';
+            el.appendChild(d);
+          });
+      });
     }
 
+    // ================= render =================
     function render() {
-      document.getElementById('modeBadge').textContent = MODE_NAMES[sim.state.current_mode];
-      document.getElementById('motEnable').textContent = sim.outputs.Mot_Enable;
-      document.getElementById('genEnable').textContent = sim.outputs.Gen_Enable;
-      document.getElementById('iceEnable').textContent = sim.outputs.ICE_Enable;
-      document.getElementById('stepCount').textContent = sim.stepCounter;
-      document.getElementById('phaseLabel').textContent = sim.currentPhase;
-      document.getElementById('progressBar').style.width = `${Math.max(0, Math.min(100, sim.cycleProgress))}%`;
-      updateOperationalPanel(sim.lastInput);
-      ensureGaugeAnimation();
+      const col = MODE_COLOR[sim.mode];
+      document.documentElement.style.setProperty('--accent', col);
+
+      document.getElementById('modeVal').textContent = ML.STATE_NAMES[sim.mode];
+      document.getElementById('modeIdx').textContent = sim.mode;
+
+      const tr = document.getElementById('transNote');
+      if (sim.lastTransition) {
+        tr.innerHTML = ML.STATE_NAMES[sim.lastTransition.from] + ' → <b style="color:var(--ink)">' + ML.STATE_NAMES[sim.lastTransition.to] + '</b>';
+      } else if (sim.step > 0) {
+        tr.textContent = 'held';
+      } else {
+        tr.textContent = 'idle';
+      }
+
+      setEnable('enMot', sim.outputs.Mot_Enable, col);
+      setEnable('enGen', sim.outputs.Gen_Enable, col);
+      setEnable('enIce', sim.outputs.ICE_Enable, col);
+
+      document.getElementById('flowLine').innerHTML = FLOW[sim.mode];
+      document.getElementById('stepCount').textContent = sim.step;
+      document.getElementById('phaseLabel').textContent = sim.phase;
+      document.getElementById('progressBar').style.width = Math.max(0, Math.min(100, sim.progress)) + '%';
+
+      paintRail();
+      updateEnergy();
+      paintEngine();
+      ensureGauge();
       renderCharts();
     }
 
-    function addHistoryRow(input) {
-      const tbody = document.getElementById('historyBody');
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${sim.stepCounter}</td>
-        <td>${MODE_NAMES[sim.state.current_mode]}</td>
-        <td>${input.speed.toFixed(2)}</td>
-        <td>${input.P_dem.toFixed(2)}</td>
-        <td>${input.SOC.toFixed(2)}</td>
-        <td>${input.wEng.toFixed(0)}</td>
-        <td>${sim.outputs.Mot_Enable}</td>
-        <td>${sim.outputs.Gen_Enable}</td>
-        <td>${sim.outputs.ICE_Enable}</td>
-      `;
-      tbody.prepend(row);
-      while (tbody.children.length > 140) {
-        tbody.removeChild(tbody.lastChild);
+    function setEnable(id, on, col) {
+      const el = document.getElementById(id);
+      el.classList.toggle('on', on === 1);
+      el.style.setProperty('--c', col);
+    }
+
+    function updateEnergy() {
+      const cells = document.getElementById('battCells');
+      const pct = Math.max(0, Math.min(100, num('soc')));
+      const filled = Math.round((pct / 100) * 20);
+      const pdemDkw = ML.toS16(num('pdem'), 10.0);
+      const charging = pdemDkw <= T.PDEM_REGEN_DKW;
+      const discharging = pdemDkw > T.PDEM_STOP_HIGH_DKW;
+
+      document.getElementById('socRead').textContent = pct.toFixed(0);
+      document.getElementById('battState').textContent = charging ? 'charging (regen)' : discharging ? 'discharging' : 'stable';
+      for (let i = 0; i < 20; i++) {
+        let c = cells.children[i];
+        if (!c) { c = document.createElement('i'); cells.appendChild(c); }
+        c.className = (i < filled) ? (discharging ? 'f dis' : 'f') : '';
       }
+
+      // power bar (bidirectional, range -20..80, zero origin)
+      const pmin = -20, pmax = 80, val = Math.max(pmin, Math.min(pmax, num('pdem')));
+      const zeroPct = ((0 - pmin) / (pmax - pmin)) * 100;
+      const valPct = ((val - pmin) / (pmax - pmin)) * 100;
+      const fill = document.getElementById('powerFill');
+      document.getElementById('powerZero').style.left = zeroPct + '%';
+      document.getElementById('powerRead').textContent = (val >= 0 ? '+' : '') + val.toFixed(1);
+      if (val >= 0) {
+        fill.style.left = zeroPct + '%';
+        fill.style.width = (valPct - zeroPct) + '%';
+        fill.style.background = discharging ? css('--m-ice') : css('--accent-steel');
+      } else {
+        fill.style.left = valPct + '%';
+        fill.style.width = (zeroPct - valPct) + '%';
+        fill.style.background = css('--m-regen');
+      }
+      document.getElementById('powerDir').textContent = charging ? 'regen · recovering' : discharging ? 'traction' : 'idle';
     }
 
-    function applyScenario(values, label = 'Cenário manual') {
-      stopDriveCycle(false);
-      setInputFields(values);
-      sim.step(getInputs(), label, sim.cycleProgress);
+    function addHistory(input) {
+      const tb = document.getElementById('historyBody');
+      const tr = document.createElement('tr');
+      const tag = '<span class="tag" style="background:' + MODE_COLOR[sim.mode] + '"></span>';
+      tr.innerHTML =
+        '<td>' + sim.step + '</td>' +
+        '<td class="mode">' + tag + ML.STATE_NAMES[sim.mode] + '</td>' +
+        '<td>' + input.speed.toFixed(1) + '</td>' +
+        '<td>' + input.P_dem.toFixed(1) + '</td>' +
+        '<td>' + (input.SOC * 100).toFixed(1) + '</td>' +
+        '<td>' + Math.round(input.wEng) + '</td>' +
+        '<td class="' + (sim.outputs.Mot_Enable ? 'on' : '') + '">' + sim.outputs.Mot_Enable + '</td>' +
+        '<td class="' + (sim.outputs.Gen_Enable ? 'on' : '') + '">' + sim.outputs.Gen_Enable + '</td>' +
+        '<td class="' + (sim.outputs.ICE_Enable ? 'on' : '') + '">' + sim.outputs.ICE_Enable + '</td>';
+      tb.prepend(tr);
+      while (tb.children.length > 120) { tb.removeChild(tb.lastChild); }
     }
 
-    function buildDriveCycle() {
+    function pushTelemetry(input) {
+      sim.telemetry.push({ step: sim.step, speed: input.speed, P_dem: input.P_dem, SOC: input.SOC * 100, mode: sim.mode });
+      if (sim.telemetry.length > 90) { sim.telemetry.shift(); }
+    }
+
+    // ================= core actions =================
+    function doStep(input, phase, progress) {
+      const prev = sim.mode;
+      const r = ML.stepPhysical(prev, input);
+      sim.mode = r.mode;
+      sim.outputs = r.outputs;
+      sim.lastTransition = (prev !== r.mode) ? { from: prev, to: r.mode } : null;
+      sim.lastInput = { speed: input.speed, P_dem: input.P_dem, SOC: input.SOC, wEng: input.wEng };
+      sim.step += 1;
+      if (phase) { sim.phase = phase; }
+      if (progress != null) { sim.progress = progress; }
+      pushTelemetry(input);
+      addHistory(input);
+      render();
+    }
+
+    function doReset(opts) {
+      opts = opts || {};
+      stopCycles(false);
+      sim.mode = ML.MODE_STANDSTILL;
+      sim.outputs = { Mot_Enable: 0, Gen_Enable: 0, ICE_Enable: 0 };
+      sim.step = 0;
+      sim.phase = opts.phase || 'manual';
+      sim.progress = opts.progress || 0;
+      sim.lastTransition = null;
+      sim.lastInput = getInputs();
+      sim.telemetry = [];
+      pushTelemetry(sim.lastInput);
+      render();
+    }
+
+    // First-open input values — mirror the HTML `value` attributes of the four sliders.
+    const DEFAULT_INPUTS = { speed: 0, P_dem: 0, SOC: 0.40, wEng: 0 };
+    // Full "back to first open": restore default inputs, wipe the log, reset the FSM.
+    function resetAll() {
+      setInputs(DEFAULT_INPUTS);
+      document.getElementById('historyBody').innerHTML = '';
+      doReset();
+    }
+    // Clear only the session log + charts; keep the current inputs and active mode.
+    function clearLog() {
+      document.getElementById('historyBody').innerHTML = '';
+      sim.telemetry = [];
+      pushTelemetry(getInputs());
+      render();
+    }
+
+    // Presets are deterministic "show me this mode" shortcuts. The FSM is stateful —
+    // engine-supported modes are only reachable through START (which itself needs
+    // wEng > ENG_ON), so a single step from an arbitrary current mode is path-dependent
+    // and can stall (e.g. regen inputs applied from HYBRID reset to START and hold there).
+    // We converge from STANDSTILL instead, so the operating point always lands in its mode.
+    function applyScenario(v, label) {
+      stopCycles(false);
+      setInputs(v);
+      const input = getInputs();
+      let mode = ML.MODE_STANDSTILL, prev, guard = 0;
+      do { prev = mode; mode = ML.stepPhysical(prev, input).mode; } while (mode !== prev && ++guard < 12);
+      sim.mode = mode;
+      sim.outputs = ML.writeOutputs(mode);
+      sim.lastTransition = (mode !== ML.MODE_STANDSTILL) ? { from: ML.MODE_STANDSTILL, to: mode } : null;
+      sim.lastInput = { speed: input.speed, P_dem: input.P_dem, SOC: input.SOC, wEng: input.wEng };
+      sim.step += 1;
+      sim.phase = label;
+      pushTelemetry(input);
+      addHistory(input);
+      render();
+    }
+
+    // ================= drive cycles =================
+    let driveTimer = null, driveFrames = [], driveStart = 0;
+    const SHORT_CYCLE_SECONDS = 14;
+    let minuteTimer = null, minuteStart = 0;
+
+    function shortCycle() {
       return [
-        { label: 'Veículo em ponto morto / pronto para arrancar', speed: 0, P_dem: 0, SOC: 0.58, wEng: 0 },
-        { label: 'Saída suave em modo elétrico', speed: 8, P_dem: 10, SOC: 0.57, wEng: 300 },
-        { label: 'Aceleração elétrica no trânsito', speed: 18, P_dem: 18, SOC: 0.56, wEng: 600 },
-        { label: 'Cruzeiro urbano estável', speed: 28, P_dem: 12, SOC: 0.54, wEng: 800 },
-        { label: 'Alívio do acelerador', speed: 20, P_dem: 1, SOC: 0.54, wEng: 700 },
-        { label: 'Frenagem regenerativa', speed: 18, P_dem: -8, SOC: 0.55, wEng: 400 },
-        { label: 'Redução forte de velocidade', speed: 6, P_dem: -10, SOC: 0.56, wEng: 100 },
-        { label: 'Retomada após a frenagem', speed: 22, P_dem: 15, SOC: 0.55, wEng: 1200 },
-        { label: 'Demanda alta / ultrapassagem', speed: 37, P_dem: 70, SOC: 0.52, wEng: 2500 },
-        { label: 'Partida do motor térmico', speed: 42, P_dem: 68, SOC: 0.50, wEng: 3500 },
-        { label: 'Cruzeiro híbrido em rodovia', speed: 50, P_dem: 45, SOC: 0.49, wEng: 4000 },
-        { label: 'Encerrando demonstração', speed: 48, P_dem: 20, SOC: 0.49, wEng: 2800 }
+        { label: 'neutral', speed: 0, P_dem: 0, SOC: 0.58, wEng: 0 },
+        { label: 'EV launch', speed: 8, P_dem: 10, SOC: 0.57, wEng: 300 },
+        { label: 'urban accel', speed: 18, P_dem: 18, SOC: 0.56, wEng: 600 },
+        { label: 'urban cruise', speed: 28, P_dem: 12, SOC: 0.54, wEng: 800 },
+        { label: 'throttle lift', speed: 20, P_dem: 1, SOC: 0.54, wEng: 700 },
+        { label: 'regen braking', speed: 18, P_dem: -8, SOC: 0.55, wEng: 400 },
+        { label: 'hard slow', speed: 6, P_dem: -10, SOC: 0.56, wEng: 100 },
+        { label: 'pickup', speed: 22, P_dem: 15, SOC: 0.55, wEng: 1200 },
+        { label: 'overtake', speed: 37, P_dem: 70, SOC: 0.52, wEng: 2500 },
+        { label: 'engine crank', speed: 42, P_dem: 68, SOC: 0.50, wEng: 3500 },
+        { label: 'hybrid cruise', speed: 50, P_dem: 45, SOC: 0.49, wEng: 4000 },
+        { label: 'wind down', speed: 48, P_dem: 20, SOC: 0.49, wEng: 2800 }
       ];
     }
 
-    function resetCycleButtons() {
-      const shortButton = document.getElementById('driveCycleBtn');
-      const minuteButton = document.getElementById('minuteCycleBtn');
-
-      shortButton.textContent = 'Rodar ciclo real';
-      minuteButton.textContent = 'Rodar ciclo real de 1 minuto';
-      shortButton.classList.remove('running');
-      minuteButton.classList.remove('running');
+    function setRunning(id, txt) { resetCycleBtns(); const b = document.getElementById(id); b.textContent = txt; b.classList.add('running'); }
+    function resetCycleBtns() {
+      const d = document.getElementById('driveCycleBtn'), m = document.getElementById('minuteCycleBtn');
+      d.textContent = 'Short cycle'; m.textContent = '1-min cycle';
+      d.classList.remove('running'); m.classList.remove('running');
+    }
+    function stopCycles(updatePhase) {
+      if (driveTimer) { clearInterval(driveTimer); driveTimer = null; }
+      if (minuteTimer) { clearInterval(minuteTimer); minuteTimer = null; }
+      resetCycleBtns();
+      if (updatePhase !== false) { sim.phase = 'cycle paused'; render(); }
     }
 
-    function setRunningButton(buttonId, runningText) {
-      resetCycleButtons();
-      const button = document.getElementById(buttonId);
-      button.textContent = runningText;
-      button.classList.add('running');
+    // Continuous playback: the 12 frames are waypoints; inputs ease between them over
+    // SHORT_CYCLE_SECONDS, so the drive is linear like the 1-min cycle (no chunky jumps).
+    function driveFrame() {
+      const el = Math.min(SHORT_CYCLE_SECONDS, (Date.now() - driveStart) / 1000);
+      const wp = driveFrames, span = wp.length - 1;
+      const x = (el / SHORT_CYCLE_SECONDS) * span;
+      const i = Math.min(span - 1, Math.floor(x));
+      const t = ease(Math.max(0, Math.min(1, x - i)));
+      const a = wp[i], b = wp[i + 1];
+      const f = {
+        speed: lerp(a.speed, b.speed, t), P_dem: lerp(a.P_dem, b.P_dem, t),
+        SOC: lerp(a.SOC, b.SOC, t), wEng: lerp(a.wEng, b.wEng, t)
+      };
+      setInputs(f);
+      doStep(getInputs(), b.label + ' · ' + el.toFixed(0) + 's/' + SHORT_CYCLE_SECONDS + 's', (el / SHORT_CYCLE_SECONDS) * 100);
+      if (el >= SHORT_CYCLE_SECONDS) { stopCycles(false); sim.phase = 'cycle complete'; sim.progress = 100; render(); }
     }
-
-    function stopDriveCycle(updatePhase = true) {
-      if (driveCycleTimer) {
-        clearInterval(driveCycleTimer);
-        driveCycleTimer = null;
-      }
-      if (minuteCycleTimer) {
-        clearInterval(minuteCycleTimer);
-        minuteCycleTimer = null;
-      }
-      resetCycleButtons();
-      if (updatePhase) {
-        sim.currentPhase = 'Ciclo automático pausado';
-        render();
-      }
-    }
-
-    function runDriveCycleFrame() {
-      if (driveCycleIndex >= driveCycleFrames.length) {
-        stopDriveCycle(false);
-        sim.currentPhase = 'Demonstração concluída';
-        sim.cycleProgress = 100;
-        render();
-        return;
-      }
-
-      const frame = driveCycleFrames[driveCycleIndex];
-      const progress = ((driveCycleIndex + 1) / driveCycleFrames.length) * 100;
-      setInputFields(frame);
-      sim.step(frame, frame.label, progress.toFixed(0));
-      driveCycleIndex += 1;
-    }
-
-    function runMinuteCycleFrame() {
-      const elapsedMs = Date.now() - minuteCycleStartTime;
-      const elapsedSeconds = Math.min(60, elapsedMs / 1000);
-      const frame = getMinuteCycleFrame(elapsedSeconds);
-      const progress = Math.min(100, (elapsedMs / 60000) * 100);
-
-      setInputFields(frame);
-      sim.step(frame, frame.label, progress);
-
-      if (elapsedMs >= 60000) {
-        stopDriveCycle(false);
-        sim.currentPhase = 'Ciclo real de 1 minuto concluído';
-        sim.cycleProgress = 100;
-        render();
-      }
-    }
-
-    function toggleDriveCycle() {
-      if (driveCycleTimer) {
-        stopDriveCycle();
-        return;
-      }
-
-      stopDriveCycle(false);
+    function toggleDrive() {
+      if (driveTimer) { stopCycles(); return; }
+      stopCycles(false);
       document.getElementById('historyBody').innerHTML = '';
-      driveCycleFrames = buildDriveCycle();
-      driveCycleIndex = 0;
-      setInputFields(driveCycleFrames[0]);
-      sim.init({ phaseLabel: 'Ciclo automático iniciado', cycleProgress: 0 });
-      setRunningButton('driveCycleBtn', 'Parar ciclo real');
-      runDriveCycleFrame();
-      driveCycleTimer = setInterval(runDriveCycleFrame, 900);
+      driveFrames = shortCycle();
+      doReset({ phase: 'short cycle', progress: 0 });
+      setRunning('driveCycleBtn', '■ Stop');
+      driveStart = Date.now();
+      driveFrame();
+      driveTimer = setInterval(driveFrame, 100);
     }
 
-    function toggleMinuteCycle() {
-      if (minuteCycleTimer) {
-        stopDriveCycle();
-        return;
+    function minuteSegments() {
+      return [
+        { s: 0, e: 5, l: 'gentle launch', a: { speed: 0, P_dem: 4, SOC: 0.62, wEng: 0 }, b: { speed: 30, P_dem: 20, SOC: 0.60, wEng: 500 } },
+        { s: 5, e: 12, l: 'hard accel', a: { speed: 30, P_dem: 20, SOC: 0.60, wEng: 500 }, b: { speed: 80, P_dem: 68, SOC: 0.56, wEng: 2000 } },
+        { s: 12, e: 18, l: 'climb to 120', a: { speed: 80, P_dem: 60, SOC: 0.56, wEng: 2000 }, b: { speed: 120, P_dem: 55, SOC: 0.52, wEng: 3200 } },
+        { s: 18, e: 24, l: 'decel', a: { speed: 120, P_dem: -4, SOC: 0.52, wEng: 3200 }, b: { speed: 30, P_dem: -18, SOC: 0.55, wEng: 1200 } },
+        { s: 24, e: 34, l: 'pickup', a: { speed: 30, P_dem: 14, SOC: 0.55, wEng: 1200 }, b: { speed: 100, P_dem: 58, SOC: 0.51, wEng: 2800 } },
+        { s: 34, e: 42, l: 'highway', a: { speed: 100, P_dem: 42, SOC: 0.51, wEng: 2800 }, b: { speed: 120, P_dem: 52, SOC: 0.49, wEng: 4200 } },
+        { s: 42, e: 50, l: 'slow traffic', a: { speed: 120, P_dem: -5, SOC: 0.49, wEng: 4200 }, b: { speed: 40, P_dem: -14, SOC: 0.51, wEng: 1500 } },
+        { s: 50, e: 60, l: 'cool down', a: { speed: 40, P_dem: 8, SOC: 0.51, wEng: 1500 }, b: { speed: 70, P_dem: 30, SOC: 0.46, wEng: 2600 } }
+      ];
+    }
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function ease(t) { return -(Math.cos(Math.PI * t) - 1) / 2; }
+    function minuteFrame() {
+      const el = Math.min(60, (Date.now() - minuteStart) / 1000);
+      const segs = minuteSegments();
+      const sg = segs.find(function (x) { return el >= x.s && el < x.e; }) || segs[segs.length - 1];
+      const t = ease(Math.max(0, Math.min(1, (el - sg.s) / (sg.e - sg.s))));
+      const f = { label: sg.l + ' · ' + el.toFixed(0) + 's/60s',
+        speed: lerp(sg.a.speed, sg.b.speed, t), P_dem: lerp(sg.a.P_dem, sg.b.P_dem, t),
+        SOC: lerp(sg.a.SOC, sg.b.SOC, t), wEng: lerp(sg.a.wEng, sg.b.wEng, t) };
+      setInputs(f);
+      doStep(getInputs(), f.label, Math.min(100, (el / 60) * 100));
+      if (el >= 60) { stopCycles(false); sim.phase = '1-min complete'; sim.progress = 100; render(); }
+    }
+    function toggleMinute() {
+      if (minuteTimer) { stopCycles(); return; }
+      stopCycles(false);
+      document.getElementById('historyBody').innerHTML = '';
+      doReset({ phase: '1-min cycle', progress: 0 });
+      setRunning('minuteCycleBtn', '■ Stop');
+      minuteStart = Date.now();
+      minuteFrame();
+      minuteTimer = setInterval(minuteFrame, 110);
+    }
+
+    // ================= wiring =================
+    function bindPair(numId) {
+      const n = document.getElementById(numId), r = document.getElementById(numId + 'Range');
+      n.addEventListener('input', function () { r.value = n.value; updateFx(); });
+      r.addEventListener('input', function () { n.value = r.value; updateFx(); });
+    }
+
+    function thresholdsList() {
+      const rows = [
+        ['ENG_ON', '800 rpm'], ['ENG_OFF', '790 rpm'], ['SPEED_STOP', '0.5 km/h'], ['SPEED_REGEN', '5.0 km/h'],
+        ['SPEED_EV_MAX', '35 km/h'], ['PDEM_REGEN', '-5 kW'], ['PDEM_STOP_LOW', '-1 kW'], ['PDEM_STOP_HIGH', '1 kW'],
+        ['PDEM_HYB_IN', '50 kW'], ['PDEM_HYB_OUT', '40 kW'], ['PDEM_HYB_MID', '15 kW'], ['PDEM_HYB_LOW', '10 kW'],
+        ['SOC_EV_IN', '37 %'], ['SOC_EV_OUT', '35 %'], ['SOC_MID', '30 %'], ['SOC_LOW', '25 %']
+      ];
+      document.getElementById('thresholds').innerHTML = rows.map(function (r) {
+        return '<li><span>' + r[0] + '</span><b>' + r[1] + '</b></li>';
+      }).join('');
+    }
+
+    // ================= guided tour =================
+    // First-visit coach-marks. Spotlights real controls; no sim logic touched.
+    // Auto-runs once (localStorage flag); the header "Tour" button replays it.
+    const TOUR_KEY = 'vmu.tourSeen.v1';
+    let tourActive = false;
+    const tour = { i: 0, els: null };
+    const TOUR_STEPS = [
+      { sel: null, title: 'Welcome to the VMU bench',
+        body: 'A live simulator of the vehicle\'s supervisory <b>mode logic</b> — the exact FSM from <code>mode_logic_team.c</code>. Take a 30-second tour, or skip anytime.' },
+      { sel: '.inst--speedo', title: 'The live operating point',
+        body: 'The dial shows vehicle <b>speed</b>. Its colour follows whichever drive mode the supervisor has resolved.' },
+      { sel: '.inst--right', title: 'Resolved mode &amp; enables',
+        body: 'Each cycle the supervisor picks exactly one mode and drives three enables — <b>MOT</b>, <b>GEN</b>, <b>ICE</b>.' },
+      { sel: '#engBox', title: 'Engine speed · wEng',
+        body: 'Engine rpm is the one rotational input the FSM reads. The tick marks the <b>790 → 800 rpm</b> hysteresis band. In <b>START</b> the engine is <b>cranking</b> — in the full plant the generator spins it past 800 on its own.' },
+      { sel: '.deck .card', title: 'Four supervisor inputs',
+        body: 'Drag <b>speed</b>, <b>power demand</b>, <b>SOC</b> and <b>wEng</b>; each shows its fixed-point value. Note <b>wEng</b> is plant feedback in reality, so some open-loop combinations aren\'t physically reachable.' },
+      { sel: '#stepBtn', title: 'Step the logic',
+        body: 'Advance one 0.1&nbsp;s cycle and watch the next mode resolve. <kbd>Space</kbd> also steps; <kbd>R</kbd> resets.' },
+      { sel: '#presetRow', title: 'Jump to a scenario',
+        body: 'These chips drop the inputs onto a canonical operating point and settle the FSM there — EV, regen, start, ICE, hybrid.' },
+      { sel: '#driveCycleBtn', title: 'Run a drive cycle',
+        body: 'Play an automated <b>short</b> or <b>1-minute</b> cycle and watch modes flow through the rail and charts.' },
+      { sel: '#railTrack', title: 'The mode rail',
+        body: 'All six modes in order. The marker slides to the active one and pulses on every transition.' },
+      { sel: '.data', title: 'Telemetry &amp; log',
+        body: 'Charts trace speed, power, SOC and the mode track; the log records every step. That\'s it — explore freely.' }
+    ];
+
+    function buildTourDom() {
+      const root = document.createElement('div');
+      root.id = 'tourRoot';
+      root.style.display = 'none';
+      root.innerHTML =
+        '<div id="tourBlocker"></div>' +
+        '<div id="tourHighlight"></div>' +
+        '<div id="tourCard" role="dialog" aria-modal="true" aria-labelledby="tourTitle" tabindex="-1">' +
+          '<div class="t-eyebrow"><span>Guided tour</span><span id="tourStepNo"></span></div>' +
+          '<h4 id="tourTitle"></h4>' +
+          '<p id="tourBody"></p>' +
+          '<div class="t-foot">' +
+            '<button class="t-skip" id="tourSkip">Skip tutorial</button>' +
+            '<div class="t-nav">' +
+              '<button class="ghost t-btn" id="tourBack">Back</button>' +
+              '<button class="primary t-btn" id="tourNext">Next</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(root);
+      const refs = {
+        root: root,
+        blocker: root.querySelector('#tourBlocker'),
+        highlight: root.querySelector('#tourHighlight'),
+        card: root.querySelector('#tourCard'),
+        stepNo: root.querySelector('#tourStepNo'),
+        title: root.querySelector('#tourTitle'),
+        body: root.querySelector('#tourBody'),
+        back: root.querySelector('#tourBack'),
+        next: root.querySelector('#tourNext'),
+        skip: root.querySelector('#tourSkip')
+      };
+      refs.next.addEventListener('click', nextTour);
+      refs.back.addEventListener('click', function () { showTourStep(tour.i - 1); });
+      refs.skip.addEventListener('click', function () { endTour(true); });
+      return refs;
+    }
+
+    function positionTourStep(doScroll) {
+      if (!tour.els) { return; }
+      const step = TOUR_STEPS[tour.i];
+      const target = step.sel ? document.querySelector(step.sel) : null;
+      if (target && doScroll) {
+        try { target.scrollIntoView({ block: 'center', inline: 'nearest' }); } catch (e) { target.scrollIntoView(); }
       }
-
-      stopDriveCycle(false);
-      document.getElementById('historyBody').innerHTML = '';
-      const initialFrame = getMinuteCycleFrame(0);
-      setInputFields(initialFrame);
-      sim.init({ phaseLabel: 'Ciclo real de 1 minuto iniciado', cycleProgress: 0 });
-      setRunningButton('minuteCycleBtn', 'Parar ciclo de 1 minuto');
-      minuteCycleStartTime = Date.now();
-      runMinuteCycleFrame();
-      minuteCycleTimer = setInterval(runMinuteCycleFrame, 120);
+      requestAnimationFrame(function () {
+        const els = tour.els, vw = window.innerWidth, vh = window.innerHeight;
+        if (target) {
+          const r = target.getBoundingClientRect(), pad = 8;
+          const x = Math.max(4, r.left - pad), y = Math.max(4, r.top - pad);
+          const w = Math.min(vw - 8, r.width + pad * 2), h = r.height + pad * 2;
+          els.highlight.style.display = 'block';
+          els.highlight.style.left = x + 'px';
+          els.highlight.style.top = y + 'px';
+          els.highlight.style.width = w + 'px';
+          els.highlight.style.height = h + 'px';
+          els.blocker.classList.remove('dim');
+          const cw = els.card.offsetWidth, ch = els.card.offsetHeight;
+          let top = y + h + 12;
+          if (top + ch > vh - 12) { top = y - ch - 12; }
+          top = Math.max(12, Math.min(vh - ch - 12, top));
+          let left = r.left + r.width / 2 - cw / 2;
+          left = Math.max(12, Math.min(vw - cw - 12, left));
+          els.card.style.left = left + 'px';
+          els.card.style.top = top + 'px';
+          els.card.style.transform = 'none';
+        } else {
+          els.highlight.style.display = 'none';
+          els.blocker.classList.add('dim');
+          els.card.style.left = '50%';
+          els.card.style.top = '50%';
+          els.card.style.transform = 'translate(-50%, -50%)';
+        }
+      });
     }
 
-    document.getElementById('initBtn').addEventListener('click', () => {
-      stopDriveCycle(false);
-      sim.init();
-    });
-    document.getElementById('stepBtn').addEventListener('click', () => {
-      stopDriveCycle(false);
-      sim.step(getInputs());
-    });
-    document.getElementById('driveCycleBtn').addEventListener('click', toggleDriveCycle);
-    document.getElementById('minuteCycleBtn').addEventListener('click', toggleMinuteCycle);
-    document.getElementById('evScenarioBtn').addEventListener('click', () => {
-      applyScenario({ speed: 20, P_dem: 0, SOC: 0.40, wEng: 500 }, 'Cenário EV');
-    });
-    document.getElementById('regenScenarioBtn').addEventListener('click', () => {
-      applyScenario({ speed: 10, P_dem: -5.5, SOC: 0.40, wEng: 600 }, 'Cenário Regen');
-    });
-    document.getElementById('clearBtn').addEventListener('click', () => {
-      stopDriveCycle(false);
-      document.getElementById('historyBody').innerHTML = '';
-      sim.init();
-    });
+    function showTourStep(i) {
+      tour.i = Math.max(0, Math.min(TOUR_STEPS.length - 1, i));
+      const s = TOUR_STEPS[tour.i], els = tour.els;
+      els.stepNo.textContent = (tour.i + 1) + ' / ' + TOUR_STEPS.length;
+      els.title.innerHTML = s.title;
+      els.body.innerHTML = s.body;
+      els.back.style.visibility = (tour.i === 0) ? 'hidden' : 'visible';
+      els.next.textContent = (tour.i === TOUR_STEPS.length - 1) ? 'Done' : 'Next';
+      positionTourStep(true);
+      try { els.next.focus({ preventScroll: true }); } catch (e) {}
+    }
 
-    window.modeLogicSim = sim;
-    window.toggleDriveCycle = toggleDriveCycle;
-    sim.init();
+    function nextTour() {
+      if (tour.i === TOUR_STEPS.length - 1) { endTour(true); }
+      else { showTourStep(tour.i + 1); }
+    }
+
+    function startTour() {
+      if (!tour.els) { tour.els = buildTourDom(); }
+      tourActive = true;
+      tour.els.root.style.display = 'block';
+      showTourStep(0);
+    }
+
+    function endTour(markSeen) {
+      tourActive = false;
+      if (tour.els) { tour.els.root.style.display = 'none'; }
+      if (markSeen) { try { localStorage.setItem(TOUR_KEY, '1'); } catch (e) {} }
+    }
+
+    // Capture-phase so tour keys never reach the sim's Space/R handler.
+    function tourKey(e) {
+      if (!tourActive) { return; }
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); endTour(true); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); nextTour(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); showTourStep(tour.i - 1); }
+      else if (e.code === 'Space') { e.preventDefault(); e.stopPropagation(); }   // swallow: don't step the sim
+      else if (e.key === 'r' || e.key === 'R') { e.stopPropagation(); }           // swallow: don't reset
+    }
+
+    function initTour() {
+      document.getElementById('tourBtn').addEventListener('click', startTour);
+      window.addEventListener('keydown', tourKey, true);
+      window.addEventListener('resize', function () { if (tourActive) { positionTourStep(false); } });
+      window.addEventListener('scroll', function () { if (tourActive) { positionTourStep(false); } }, true);
+      // Auto-show once per browser (localStorage). URL overrides: ?tour=1 forces it
+      // (handy for a shared demo link), ?tour=0 suppresses it. Wrapped in try/catch so
+      // a sandboxed iframe with storage blocked never throws — it just shows every time.
+      let force = false, seen = false;
+      try {
+        const q = new URLSearchParams(location.search);
+        if (q.get('tour') === '1') { force = true; }
+        else if (q.get('tour') === '0') { seen = true; }
+        else { seen = localStorage.getItem(TOUR_KEY) === '1'; }
+      } catch (e) {}
+      if (force || !seen) { setTimeout(startTour, 650); }
+    }
+
+    function init() {
+      buildRail(); buildTicks(); thresholdsList();
+      ['speed', 'pdem', 'soc', 'weng'].forEach(bindPair);
+
+      document.getElementById('stepBtn').addEventListener('click', function () { stopCycles(false); doStep(getInputs(), 'manual'); });
+      document.getElementById('resetBtn').addEventListener('click', function () { resetAll(); });
+      document.getElementById('clearBtn').addEventListener('click', function () { clearLog(); });
+      document.getElementById('driveCycleBtn').addEventListener('click', toggleDrive);
+      document.getElementById('minuteCycleBtn').addEventListener('click', toggleMinute);
+      document.getElementById('scEv').addEventListener('click', function () { applyScenario({ speed: 20, P_dem: 0, SOC: 0.40, wEng: 500 }, 'EV scenario'); });
+      document.getElementById('scRegen').addEventListener('click', function () { applyScenario({ speed: 10, P_dem: -5.5, SOC: 0.40, wEng: 600 }, 'regen scenario'); });
+      document.getElementById('scStart').addEventListener('click', function () { applyScenario({ speed: 35, P_dem: 39, SOC: 0.30, wEng: 600 }, 'start · cranking'); });
+      document.getElementById('scIce').addEventListener('click', function () { applyScenario({ speed: 40, P_dem: 0, SOC: 0.20, wEng: 900 }, 'ICE scenario'); });
+      document.getElementById('scHybrid').addEventListener('click', function () { applyScenario({ speed: 50, P_dem: 45, SOC: 0.45, wEng: 3500 }, 'hybrid'); });
+
+      document.addEventListener('keydown', function (e) {
+        if (tourActive) { return; }
+        const tag = (document.activeElement && document.activeElement.tagName) || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA') { return; }
+        if (e.code === 'Space') { e.preventDefault(); stopCycles(false); doStep(getInputs(), 'manual'); }
+        else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); resetAll(); }
+      });
+
+      window.addEventListener('resize', function () { drawSpeedo(gaugeAnim.speed); paintRail(); renderCharts(); });
+
+      updateFx();
+      doReset();
+      initTour();
+      window.vmuSim = sim;
+    }
+
+    init();
   </script>
 </body>
 </html>

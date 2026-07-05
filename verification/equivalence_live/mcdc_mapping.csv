@@ -1,0 +1,15 @@
+id,chart_transition,chart_guard,c_function,c_conditions,thresholds
+1,STANDSTILL->EV,speed>0.5 && speed<=35 && charge>=0.37,guard_standstill_to_ev,flag_speed_gt_stop;flag_speed_le_ev_max;flag_soc_ge_ev_in,SPEED_STOP;SPEED_EV_MAX;SOC_EV_IN
+2,STANDSTILL->START,speed>0.5,guard_standstill_to_start,flag_speed_gt_stop,SPEED_STOP
+3,EV->REGENB,speed>5 && P_dem<=-5,guard_to_regenb,flag_speed_gt_regen;flag_p_dem_le_regen,SPEED_REGEN;PDEM_REGEN
+4,EV->START,speed>35 || P_dem>=50 || charge<0.35,guard_ev_to_start,flag_speed_gt_ev_max;flag_p_dem_ge_hyb_in;flag_soc_lt_ev_out,SPEED_EV_MAX;PDEM_HYB_IN;SOC_EV_OUT
+5,*->STANDSTILL,speed<=0.5 && P_dem<=1 && P_dem>=-1,guard_to_standstill,flag_speed_le_stop;flag_p_dem_le_stop_high;flag_p_dem_ge_stop_low,SPEED_STOP;PDEM_STOP_HIGH;PDEM_STOP_LOW
+6,REGENB->START,((speed>35) & (P_dem>=-1)) | (charge<0.35),guard_regenb_to_start,flag_speed_gt_ev_max;flag_p_dem_ge_stop_low;flag_soc_lt_ev_out,SPEED_EV_MAX;PDEM_STOP_LOW;SOC_EV_OUT
+7,REGENB->EV,P_dem>=-1 && speed>0.5,guard_regenb_to_ev,flag_p_dem_ge_stop_low;flag_speed_gt_stop,PDEM_STOP_LOW;SPEED_STOP
+8,MOTION->EV,engine_speed>EngOnRPM && P_dem<=40 && P_dem>=-1 && speed>0.5 && speed<=35 && charge>=0.37,guard_motion_to_ev,flag_weng_gt_on;flag_p_dem_le_hyb_out;flag_p_dem_ge_stop_low;flag_speed_gt_stop;flag_speed_le_ev_max;flag_soc_ge_ev_in,ENG_ON;PDEM_HYB_OUT;PDEM_STOP_LOW;SPEED_STOP;SPEED_EV_MAX;SOC_EV_IN
+9,MOTION->REGENB,engine_speed>EngOnRPM && speed>5 && P_dem<=-5,motion_ice_common_exit(weng_gt_on & to_regenb),flag_weng_gt_on;flag_speed_gt_regen;flag_p_dem_le_regen,ENG_ON;SPEED_REGEN;PDEM_REGEN
+10,START->HYBRID,engine_speed>EngOnRPM && charge>=0.30 && (speed>35 || P_dem>=15),guard_start_to_hybrid,flag_weng_gt_on;flag_soc_ge_mid;flag_speed_gt_ev_max;flag_p_dem_ge_hyb_mid,ENG_ON;SOC_MID;SPEED_EV_MAX;PDEM_HYB_MID
+11,START->ICE,engine_speed>EngOnRPM,guard_start_to_ice,flag_weng_gt_on,ENG_ON
+12,ICE->HYBRID,P_dem>=15 && charge>=0.30,guard_ice_to_hybrid,flag_p_dem_ge_hyb_mid;flag_soc_ge_mid,PDEM_HYB_MID;SOC_MID
+13,HYBRID->ICE,P_dem<=10 || charge<0.25,guard_hybrid_to_ice,flag_p_dem_le_hyb_low;flag_soc_lt_low,PDEM_HYB_LOW;SOC_LOW
+14,ICE/HYBRID->START (reset),engine_speed<=EngOffRPM,internal_motion_ice_reset,flag_weng_le_off,ENG_OFF
