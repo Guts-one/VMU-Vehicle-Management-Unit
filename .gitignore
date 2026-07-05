@@ -43,3 +43,12 @@ CLAUDE.local.md
 /verification/equivalence_live/*.slxc
 /verification/equivalence_live/*_console.txt
 /verification/equivalence_live/*_log.txt
+
+# JS <-> C equivalence harness: Node deps + build artifacts (sources are tracked)
+/node_modules/
+/coverage/
+/verification/js_equivalence/mode_probe
+/verification/js_equivalence/mode_probe.exe
+/verification/js_equivalence/probe_out.csv
+/verification/js_equivalence/probe_summary.txt
+/verification/js_equivalence/js_out.csv
