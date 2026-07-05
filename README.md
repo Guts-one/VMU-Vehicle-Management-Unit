@@ -48,13 +48,15 @@ The VMU supervisory logic selects operating modes — `STANDSTILL`, `EV`, `REGEN
 │   ├── MCDC_matrix.md               # Tests ↔ requirements ↔ MC/DC matrix
 │   ├── summary.txt                  # Curated coverage summary
 │   ├── branch_coverage_lcov/        # gcc-11 + lcov 1.14 (lines + branches)
+│   ├── equivalence_live/            # Live chart↔C co-sim evidence (coverage + tm_report.pdf)
 │   ├── mcdc_native_gcov14/          # gcc-14 -fcondition-coverage (native MC/DC)
 │   └── mcdc_static_checker/         # mcdc-checker BDD tree-likeness check
 ├── doc/
 │   ├── Requirements.pdf             # Final requirements document
 │   └── mapeamento_transicoes_secao4_por_responsavel.md
 ├── verification/
-│   └── simulink_c_equivalence.c     # Replays the full Simulink stimulus through the C API
+│   ├── simulink_c_equivalence.c     # Replays the full Simulink stimulus through the C API
+│   └── equivalence_live/            # Live model↔C co-simulation harness (S-Function + Test Manager)
 ├── mode_logic_sim.html              # Interactive web simulator
 ├── run_branch_coverage.sh           # Branch/line coverage runner (gcc-11 + lcov)
 ├── run_mcdc_native.sh               # Native MC/DC runner (gcc-14 + gcov-14 --conditions)

@@ -1,0 +1,6 @@
+metric,covered,total,percent
+decision,44,44,100.00
+condition,78,78,100.00
+mcdc,39,39,100.00
+
+decision_index,text,mcdc_covered,mcdc_total
