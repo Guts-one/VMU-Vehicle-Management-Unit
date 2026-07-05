@@ -3,7 +3,7 @@
 [![CI](https://github.com/Guts-one/VMU-Vehicle-Management-Unit/actions/workflows/ci.yaml/badge.svg)](https://github.com/Guts-one/VMU-Vehicle-Management-Unit/actions)
 ![Unity tests](https://img.shields.io/badge/Unity_tests-141_passing-brightgreen)
 ![MC/DC](https://img.shields.io/badge/MC%2FDC-100%25_C_and_Stateflow-brightgreen)
-![Equivalence](https://img.shields.io/badge/model--to--code_replay-265%2F265-brightgreen)
+![Equivalence](https://img.shields.io/badge/model--to--code_live_co--sim-473%2F473-brightgreen)
 ![MISRA](https://img.shields.io/badge/MISRA_C_2012-checked_in_CI-blue)
 
 Supervisory mode logic for a power-split hybrid: **requirements → Simulink/Stateflow model →
@@ -130,7 +130,8 @@ The `Test report/` folder is the versioned home for coverage artifacts produced 
 | Branches                     | 98.00 % (98 / 100)    | `lcov` (lcov_branch_coverage) |
 | **C MC/DC condition outcomes** | **100.00 % (86 / 86)** | `gcov-14 --conditions`    |
 | **Stateflow native MC/DC**   | **100.00 % (39 / 39)** | Simulink Coverage R2026a    |
-| **Simulink↔C equivalence**   | **265 / 265 rows match** | full MC/DC stimulus replay  |
+| **Simulink↔C equivalence (live co-sim)** | **473 / 473 rows match (outputs + state)** | S-Function co-simulation |
+| Web-sim JS↔C differential    | 473 / 473 rows match  | `js-c-equivalence` CI job     |
 | Static MC/DC issues          | 0                     | `mcdc-checker`                |
 
 MC/DC is complete both under `gcov-14 --conditions` for the C implementation and under native Simulink Coverage for the Stateflow chart. See `Test report/README.md` for tool details and `Test report/MCDC_matrix.md` for the tests ↔ requirements mapping and per-decision MC/DC analysis.
