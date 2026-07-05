@@ -1,4 +1,19 @@
-# VMU — Vehicle Management Unit
+# VMU — Vehicle Management Unit (Power-Split HEV)
+
+[![CI](https://github.com/Guts-one/VMU-Vehicle-Management-Unit/actions/workflows/ci.yaml/badge.svg)](https://github.com/Guts-one/VMU-Vehicle-Management-Unit/actions)
+![Unity tests](https://img.shields.io/badge/Unity_tests-141_passing-brightgreen)
+![MC/DC](https://img.shields.io/badge/MC%2FDC-100%25_C_and_Stateflow-brightgreen)
+![Equivalence](https://img.shields.io/badge/model--to--code_replay-265%2F265-brightgreen)
+![MISRA](https://img.shields.io/badge/MISRA_C_2012-checked_in_CI-blue)
+
+Supervisory mode logic for a power-split hybrid: **requirements → Simulink/Stateflow model →
+fixed-point MISRA C 2012 — with the complete V&V evidence versioned in this repo.**
+
+▶ **[Try the interactive simulator](https://guts-one.github.io/VMU-Vehicle-Management-Unit/mode_logic_sim.html)** — no install, runs in the browser.
+
+## Authorship & context
+
+Final project of the UFPE/Stellantis Postgraduate Technological Residency in Automotive Software Development (2026), building on a MathWorks HEV power-split example (see license note). The project began as team work; this baseline consolidates the per-author suites. My individual (Gustavo) contributions: adaptation of the MathWorks example into the reference model (supervisory logic and plant); scoping of the requirements document — elicitation and validation against the simulated model; the C architecture of the mode-logic module and its fixed-point rebuild for embedded targets; the original transition suites for the START, ICE, and HYBRID states; the model-level coverage report (line, branch, and MC/DC via Simulink Coverage), used to cross-check the gcc-14 code-level MC/DC; and the CI automation fixes (GitHub Actions build/test/MISRA pipeline).
 
 ## Overview
 
