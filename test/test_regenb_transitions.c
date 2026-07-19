@@ -1,6 +1,6 @@
 /* ============================================================
  * test_Bruna.c
- * Adaptado para Ceedling
+ * Adapted for Ceedling
  * ============================================================ */
 #include "unity.h"
 #include "mode_logic_team.h"
