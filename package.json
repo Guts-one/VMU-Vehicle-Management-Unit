@@ -1,6 +1,6 @@
 {
   "name": "vmu-mode-logic",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "private": true,
   "description": "VMU supervisory mode logic — web simulator (mode_logic.js) and the deterministic JS<->C equivalence harness.",
   "scripts": {
