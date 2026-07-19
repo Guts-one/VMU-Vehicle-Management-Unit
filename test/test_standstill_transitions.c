@@ -40,19 +40,19 @@ void test_init_valid(void) {
 // SwHLR10 - Sanity (NULL robustness)
 void test_init_null(void) { ModeLogic_Init(NULL); TEST_PASS(); }
 
-// SwHLR10 - Sanity (NULL state)  <<<< CORRIGIDO
+// SwHLR10 - Sanity (NULL state)
 void test_step_null_state(void) {
     Inputs_t in = make_inputs(0, 0, 0.5, 0);
     Outputs_t out;
 
-    // Inicializa todos os campos com um valor sentinel
+    // Initialize every field with a sentinel value.
     out.Mot_Enable = 0xFF;
     out.Gen_Enable = 0xFF;
     out.ICE_Enable = 0xFF;
 
     ModeLogic_Step(NULL, &in, &out);
 
-    // Nenhum campo deve ter sido alterado
+    // No field should have been modified.
     TEST_ASSERT_EQUAL(0xFF, out.Mot_Enable);
     TEST_ASSERT_EQUAL(0xFF, out.Gen_Enable);
     TEST_ASSERT_EQUAL(0xFF, out.ICE_Enable);
