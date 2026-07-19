@@ -36,7 +36,7 @@ The VMU supervisory logic selects operating modes — `STANDSTILL`, `EV`, `REGEN
 │   └── mode_logic_team.h            # Modular team-oriented API (current baseline)
 ├── src/
 │   ├── mode_logic_team.c            # C implementation of the supervisory logic
-│   └── transicoes_estados_mode_logic.md
+│   └── mode_logic_state_transitions.md
 ├── test/
 │   ├── test_ev_transitions.c                      # EV-mode transition tests
 │   ├── test_regenb_transitions.c                  # Regenerative-braking transition tests
@@ -52,8 +52,9 @@ The VMU supervisory logic selects operating modes — `STANDSTILL`, `EV`, `REGEN
 │   ├── mcdc_native_gcov14/          # gcc-14 -fcondition-coverage (native MC/DC)
 │   └── mcdc_static_checker/         # mcdc-checker BDD tree-likeness check
 ├── doc/
-│   ├── Requirements.pdf             # Final requirements document
-│   └── mapeamento_transicoes_secao4_por_responsavel.md
+│   ├── Requirements.pdf                         # Final requirements document
+│   ├── ecu_fixed_point_memory_report.md         # Fixed-point guidance for ECU software
+│   └── section_4_transition_mapping_by_owner.md # Section 4 ownership and traceability
 ├── verification/
 │   ├── simulink_c_equivalence.c     # Replays the full Simulink stimulus through the C API
 │   ├── equivalence_live/            # Live model↔C co-simulation harness (S-Function + Test Manager)
@@ -95,8 +96,9 @@ The implementation provides:
 ### Requirements & Transition Documentation
 
 - `doc/Requirements.pdf` — final requirements document.
-- `src/transicoes_estados_mode_logic.md` — state names, threshold mapping, transition priorities, and expected behavior per mode.
-- `doc/mapeamento_transicoes_secao4_por_responsavel.md` — Section 4 transitions mapped per responsible team member.
+- `src/mode_logic_state_transitions.md` — state names, threshold mapping, transition priorities, and expected behavior per mode.
+- `doc/section_4_transition_mapping_by_owner.md` — Section 4 transitions mapped per responsible team member.
+- `doc/ecu_fixed_point_memory_report.md` — fixed-point design guidance and its application to the VMU integer API.
 
 ### Test Suite
 
