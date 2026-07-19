@@ -10,7 +10,7 @@
  *   soc_q10000   = battery state of charge in 0..10000
  *   weng_rpm     = engine speed in rpm
  *
- * Requisitos atendidos:
+ * Requirements addressed:
  *   SysHLR03 - Calibratable and Hysteretic Mode Transitions
  *   SwHLR01  - Execution Interface
  *   SwHLR10  - Unique Output Mapping
@@ -20,8 +20,8 @@
 
 #include <stdint.h>  
 
-/* Thresholds calibraveis em escala inteira.
- * Valores fisicos alinhados com o modelo HEV_powersplit_adapted. */
+/* Calibratable thresholds represented as scaled integers.
+ * Physical values are aligned with the HEV_powersplit_adapted model. */
 
 #define ENG_ON_RPM             (800U)
 #define ENG_OFF_RPM            (790U)
@@ -40,7 +40,7 @@
 #define SOC_LOW_Q10000         (2500U)
 #define SOC_MID_Q10000         (3000U)
 
-/* Modos internos da VMU. */
+/* Internal VMU modes. */
 typedef enum {
     MODE_STANDSTILL = 0,
     MODE_EV         = 1,
@@ -50,7 +50,7 @@ typedef enum {
     MODE_HYBRID     = 5
 } Mode_t;
 
-/* Entradas externas em fixed-point. O step nao depende de globais. */
+/* External fixed-point inputs. The step function does not depend on globals. */
 typedef struct {
     uint16_t speed_dkph;
     int16_t p_dem_dkw;
@@ -58,20 +58,20 @@ typedef struct {
     uint16_t weng_rpm;
 } Inputs_t;
 
-/* Saidas binarias.
- * uint8_t reduz o tamanho da struct em relacao a int. */
+/* Binary outputs.
+ * uint8_t reduces the structure size compared with int. */
 typedef struct {
     uint8_t Mot_Enable;
     uint8_t Gen_Enable;
     uint8_t ICE_Enable;
 } Outputs_t;
 
-/* Estado interno da maquina. */
+/* Internal state-machine state. */
 typedef struct {
     Mode_t current_mode;
 } State_t;
 
-/* Inputs_t entra como const para reforcar que o step nao altera as entradas. */
+/* Inputs_t is const to guarantee that the step function does not modify inputs. */
 void ModeLogic_Init(State_t *state);
 void ModeLogic_Step(State_t *state, const Inputs_t *in, Outputs_t *out);
 
