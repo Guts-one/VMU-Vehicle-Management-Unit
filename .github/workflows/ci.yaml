@@ -6,9 +6,12 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   static-analysis:
-    name: Static Analysis (MISRA C 2012)
+    name: Cppcheck and MISRA addon
     runs-on: ubuntu-latest
 
     steps:
@@ -32,34 +35,37 @@ jobs:
       - name: Run cppcheck general checks
         run: |
           set +e
-          cppcheck --enable=all \
+          mkdir -p build/static-analysis
+          cppcheck --enable=warning,style,performance,portability,unusedFunction \
                    --suppress=missingIncludeSystem \
                    --suppress=unmatchedSuppression \
                    --inline-suppr \
                    --error-exitcode=1 \
-                   --output-file=cppcheck-report.txt \
+                   --output-file=build/static-analysis/cppcheck-report.txt \
                    -Iinc \
                    src/ inc/
           STATUS=$?
           echo "=== cppcheck general report ==="
-          cat cppcheck-report.txt || true
+          cat build/static-analysis/cppcheck-report.txt
           exit $STATUS
 
       - name: Run MISRA C 2012 (manual dump + addon)
         run: |
-          set +e
-          echo "=== generating cppcheck dumps ==="
-          cppcheck --dump -Iinc src/ inc/
-          echo "=== running misra.py on each dump ==="
+          set -euo pipefail
+          cppcheck --dump --inline-suppr -Iinc src/ inc/
+          shopt -s nullglob
+          dumps=(src/*.dump inc/*.dump)
+          if [ "${#dumps[@]}" -eq 0 ]; then
+            echo "No cppcheck dumps were generated." >&2
+            exit 1
+          fi
+          : > build/static-analysis/misra-report.txt
           MISRA_STATUS=0
-          for f in $(find src inc -name '*.dump'); do
-            echo "--- $f ---"
-            python3 /usr/share/cppcheck/addons/misra.py "$f"
-            rc=$?
-            if [ "$rc" != "0" ]; then
-              MISRA_STATUS=$rc
-            fi
+          for f in "${dumps[@]}"; do
+            python3 /usr/share/cppcheck/addons/misra.py "$f" \
+              >> build/static-analysis/misra-report.txt 2>&1 || MISRA_STATUS=$?
           done
+          cat build/static-analysis/misra-report.txt
           exit $MISRA_STATUS
 
       - name: Upload analysis report
@@ -67,7 +73,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: misra-analysis-report
-          path: cppcheck-report.txt
+          path: build/static-analysis/*.txt
 
   build-and-test:
     name: Build and test
@@ -80,27 +86,16 @@ jobs:
       - name: Install build tools
         run: sudo apt-get update && sudo apt-get install -y build-essential
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Fetch Unity
         run: git clone --depth 1 https://github.com/ThrowTheSwitch/Unity.git unity
 
       - name: Build and run mode logic tests
-        run: |
-          set -e
-          for t in test/test_ev_transitions.c \
-                   test/test_regenb_transitions.c \
-                   test/test_standstill_transitions.c \
-                   test/test_start_to_hybrid_ice_and_resets.c \
-                   test/test_ice_hybrid_external_and_internal.c; do
-            echo "=== Generating runner for $t ==="
-            runner="${t%.c}_runner.c"
-            ruby unity/auto/generate_test_runner.rb "$t" "$runner"
-            echo "=== Building $t ==="
-            gcc -std=c99 -Wall -Wextra -Iinc -Iunity/src \
-                src/mode_logic_team.c unity/src/unity.c "$t" "$runner" \
-                -o test_runner
-            echo "=== Running $t ==="
-            ./test_runner
-          done
+        run: npm run test:c
 
   js-c-equivalence:
     name: JS ↔ C equivalence (web simulator)
@@ -115,26 +110,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Guard — reuse of verification/equivalence_live must be present
-        run: |
-          set -e
-          missing=0
-          for f in verification/equivalence_live/gen_boundary_stimulus.py \
-                   verification/equivalence_live/mode_probe.c \
-                   verification/equivalence_live/mcdc_mapping.csv; do
-            if [ ! -f "$f" ]; then echo "MISSING: $f"; missing=1; fi
-          done
-          if [ "$missing" != "0" ]; then
-            echo "This gate reuses verification/equivalence_live/ (stimulus generator +"
-            echo "compiled-C oracle + MC/DC map). Commit that folder so CI can run it."
-            exit 1
-          fi
-
       - name: Install Node deps
         run: npm ci
 
       - name: JS ↔ C differential + MC/DC independence (state + outputs, 0 mismatches)
         run: npm run verify
 
-      - name: MC/DC-grade branch coverage of mode_logic.js
+      - name: JavaScript branch coverage
         run: npm run coverage

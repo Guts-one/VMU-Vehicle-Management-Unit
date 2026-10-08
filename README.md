@@ -1,290 +1,83 @@
-# VMU — Vehicle Management Unit (Power-Split HEV)
+# VMU — Vehicle Management Unit
 
-[![CI](https://github.com/Guts-one/VMU-Vehicle-Management-Unit/actions/workflows/ci.yaml/badge.svg)](https://github.com/Guts-one/VMU-Vehicle-Management-Unit/actions)
-![Unity tests](https://img.shields.io/badge/Unity_tests-141_passing-brightgreen)
-![MC/DC](https://img.shields.io/badge/MC%2FDC-100%25_C_and_Stateflow-brightgreen)
-![Equivalence](https://img.shields.io/badge/model--to--code_live_co--sim-473%2F473-brightgreen)
-![MISRA](https://img.shields.io/badge/MISRA_C_2012-checked_in_CI-blue)
+[![CI](https://github.com/Guts-one/VMU-Vehicle-Management-Unit/actions/workflows/ci.yaml/badge.svg)](https://github.com/Guts-one/VMU-Vehicle-Management-Unit/actions/workflows/ci.yaml)
 
-Supervisory mode logic for a power-split hybrid: **requirements → Simulink/Stateflow model →
-fixed-point MISRA C 2012 — with the complete V&V evidence versioned in this repo.**
+Supervisory mode control for a power-split hybrid electric vehicle. A Simulink/Stateflow reference model and a hand-written C implementation select `STANDSTILL`, `EV`, `REGENB`, `START`, `ICE`, or `HYBRID` from driver power demand, vehicle speed, battery state of charge, and engine speed.
 
-▶ **[Try the interactive simulator](https://guts-one.github.io/VMU-Vehicle-Management-Unit/mode_logic_sim.html)** — no install, runs in the browser.
+**[Open the interactive simulator](https://guts-one.github.io/VMU-Vehicle-Management-Unit/mode_logic_sim.html)** · [Verification results](reports/README.md) · [Build and test](docs/testing.md)
 
-## Authorship & context
+## Context and my contribution
 
-Final project of the UFPE/Stellantis Postgraduate Technological Residency in Automotive Software Development (2026), building on a MathWorks HEV power-split example (see license note). The project began as team work; this baseline consolidates the per-author suites. My individual (Gustavo) contributions: adaptation of the MathWorks example into the reference model (supervisory logic and plant); scoping of the requirements document — elicitation and validation against the simulated model; the C architecture of the mode-logic module and its fixed-point rebuild for embedded targets; the original transition suites for the START, ICE, and HYBRID states; the model-level coverage report (line, branch, and MC/DC via Simulink Coverage), used to cross-check the gcc-14 code-level MC/DC; and the CI automation fixes (GitHub Actions build/test/MISRA pipeline).
+This project began as a five-person final project in the UFPE/Stellantis Technological Residency in Automotive Software Development (2026), using a MathWorks power-split HEV example as its starting point.
 
-## Overview
+I’m Gustavo Igor da Silva. During the residency, I adapted the reference model, scoped and linked the requirements, established the C module architecture, and implemented and tested the engine-supported external transitions and the internal ICE/Hybrid transitions. I also worked on the build and static-analysis pipeline.
 
-This repository hosts the VMU (Vehicle Management Unit) baseline for a power-split hybrid electric vehicle (HEV).
-It brings together the system reference Simulink model with linked requirements, a manual C implementation of the supervisory mode logic, the final requirements document, an interactive web simulator, and a complete test, coverage, and CI infrastructure aligned with **MISRA C 2012**.
+After the team baseline, I continued the project independently:
 
-The VMU supervisory logic selects operating modes — `STANDSTILL`, `EV`, `REGENB`, `START`, `ICE`, `HYBRID` — based on driver power demand, vehicle speed, battery state of charge, and engine speed.
+- **Fixed-point C interface:** replaced floating-point inputs with explicitly scaled integers and aligned the model, requirements, and regression tests.
+- **Model-to-code verification:** added live Stateflow/C co-simulation, boundary probes, active-state comparison, and coverage evidence.
+- **Simulator verification:** extracted the browser simulator’s logic into a testable module and added a C/JavaScript differential check to CI.
 
-## Repository Structure
+The [contribution record](docs/contributions.md) separates this continuation from the team’s work and links to the relevant commits. The original browser simulator was created by Danilo Varini.
+
+## What to inspect
+
+| Area | Entry point |
+| --- | --- |
+| C controller and fixed-point API | [Implementation](src/mode_logic_team.c), [header](inc/mode_logic_team.h), [design notes](docs/fixed-point.md) |
+| Reference model | [Model setup and snapshots](Model/HEV_powersplit_adapted/README.md) |
+| Requirements and transitions | [Requirements PDF](docs/Requirements.pdf), [transition reference](docs/mode-logic.md), [ownership mapping](docs/requirements-ownership.md) |
+| Unit tests | [Five transition suites](test/) |
+| Live model/C comparison | [Harness and instructions](verification/equivalence_live/README.md) |
+| Browser logic/C comparison | [Differential harness](verification/js_equivalence/README.md) |
+| Static analysis | [Scope and commands](docs/static-analysis.md) |
+
+## Verification evidence
+
+These figures describe the saved verification baseline. Reproduction commands and tool versions are in the [report index](reports/README.md).
+
+| Check | Recorded result |
+| --- | --- |
+| C unit tests | 141 tests, zero failures |
+| C MC/DC condition outcomes | 86/86, measured with GCC/gcov 14 |
+| Stateflow MC/DC | 39/39, measured with Simulink Coverage |
+| Live Stateflow/C comparison | 469 exact matches and 4 documented sub-LSB quantization differences across 473 rows; zero unexpected grid mismatches |
+| JavaScript/C comparison | 473/473 rows match on state and outputs |
+
+Coverage counts describe the exercised logic; they do not establish vehicle-level safety or formal MISRA/ISO 26262 compliance. Platform timing and dedicated hysteresis-cycle verification remain outside or incomplete in this baseline; see the [verification limits](reports/README.md#limits).
+
+## Run locally
+
+The browser simulator opens directly from `mode_logic_sim.html`; no build is needed.
+
+For the C and JavaScript checks, install Node.js, Python 3, and GCC, then run from the repository root:
+
+```sh
+git clone --depth 1 https://github.com/ThrowTheSwitch/Unity.git unity
+npm ci
+npm run test:c
+npm test
+```
+
+`npm run test:c` runs the C unit suites. `npm test` checks JavaScript/C equivalence and JavaScript coverage. Generated output goes to `build/` and `coverage/`. See [testing instructions](docs/testing.md) for tool overrides, C coverage, recorded-stimulus replay, and MATLAB setup.
+
+## Repository layout
 
 ```text
-.
-├── .github/workflows/
-│   └── ci.yaml                      # Build, unit tests, and MISRA static analysis
-├── Model/
-│   ├── HEV_powersplit_adapted/      # Simulink reference model with requirements traceability
-│   ├── HEV Powersplit_adapted_model_Document.pdf
-│   └── Requirements.docx
-├── inc/
-│   └── mode_logic_team.h            # Modular team-oriented API (current baseline)
-├── src/
-│   ├── mode_logic_team.c            # C implementation of the supervisory logic
-│   └── mode_logic_state_transitions.md
-├── test/
-│   ├── test_ev_transitions.c                      # EV-mode transition tests
-│   ├── test_regenb_transitions.c                  # Regenerative-braking transition tests
-│   ├── test_standstill_transitions.c              # Standstill transition tests
-│   ├── test_start_to_hybrid_ice_and_resets.c      # START → HYBRID/ICE and reset paths
-│   └── test_ice_hybrid_external_and_internal.c    # ICE/HYBRID external + internal transitions
-├── Test report/                     # Versioned coverage artifacts (branch + MC/DC)
-│   ├── README.md                    # Test-report tooling, layout, and how-to
-│   ├── MCDC_matrix.md               # Tests ↔ requirements ↔ MC/DC matrix
-│   ├── summary.txt                  # Curated coverage summary
-│   ├── branch_coverage_lcov/        # gcc-11 + lcov 1.14 (lines + branches)
-│   ├── equivalence_live/            # Live chart↔C co-sim evidence (coverage + tm_report.pdf)
-│   ├── mcdc_native_gcov14/          # gcc-14 -fcondition-coverage (native MC/DC)
-│   └── mcdc_static_checker/         # mcdc-checker BDD tree-likeness check
-├── doc/
-│   ├── Requirements.pdf                         # Final requirements document
-│   ├── ecu_fixed_point_memory_report.md         # Fixed-point guidance for ECU software
-│   └── section_4_transition_mapping_by_owner.md # Section 4 ownership and traceability
-├── verification/
-│   ├── simulink_c_equivalence.c     # Replays the full Simulink stimulus through the C API
-│   ├── equivalence_live/            # Live model↔C co-simulation harness (S-Function + Test Manager)
-│   └── js_equivalence/              # Deterministic web-simulator ↔ C differential harness (state + MC/DC)
-├── mode_logic.js                    # Supervisory logic — single source shared by the web sim + JS↔C harness
-├── mode_logic_sim.html              # Interactive web simulator (consumes mode_logic.js)
-├── run_branch_coverage.sh           # Branch/line coverage runner (gcc-11 + lcov)
-├── run_mcdc_native.sh               # Native MC/DC runner (gcc-14 + gcov-14 --conditions)
-├── run_simulink_c_equivalence.sh    # 265-row Simulink↔C behavioral equivalence check
-├── misra.py                         # MISRA C 2012 verification script
-├── MISRA_COMPLIANCE.md              # Detailed MISRA rules and patterns
-├── MISRA_QUICKSTART.md              # Developer quick-start for MISRA
-├── UnityExecution.md                # Unity build/coverage instructions
-└── README.md
+Model/          Simulink model, requirements source, and upstream assets
+src/            C controller
+inc/            Public C interface and calibrations
+test/           C unit tests
+verification/   Model/C and JavaScript/C harnesses
+scripts/        Test and coverage runners
+docs/           Design, setup, requirements, and contribution records
+reports/        Selected verification evidence
 ```
 
-## Main Components
+`mode_logic.js` and `mode_logic_sim.html` remain at the root so the published simulator URL stays stable. Reports include the assets needed to read them; compiled programs, object files, and coverage counters are generated locally.
 
-### Simulink Reference Model
+## Credits and licensing
 
-Located in `Model/HEV_powersplit_adapted/`. It contains the supervisory model that the C baseline mirrors, together with **requirements linked directly inside the model** for traceability, plus overview material, scripts, image assets, and workflow support files. A standalone document describing the model is available at `Model/HEV Powersplit_adapted_model_Document.pdf`.
+The residency team was Danilo Varini, Marinel Almeida, Bruna, Hugo, and Gustavo Igor da Silva. See [contributions](docs/contributions.md) for the division of work.
 
-### C Mode Logic Baseline
-
-The current C implementation lives in:
-
-- `src/mode_logic_team.c`
-- `inc/mode_logic_team.h`
-
-The implementation provides:
-
-- mode enumeration and I/O structures
-- fixed-point input API for embedded use (`speed_dkph`, `p_dem_dkw`, `soc_q10000`, `weng_rpm`)
-- integer threshold constants for transitions, aligned with the physical thresholds used by the Simulink model
-- per-state handlers structured for traceability
-- centralized output mapping for motor, generator, and ICE enables (no one-step delay)
-- MISRA-oriented coding style: `const` inputs, explicit `uint8_t` booleans, structured control flow
-
-### Requirements & Transition Documentation
-
-- `doc/Requirements.pdf` — final requirements document.
-- `src/mode_logic_state_transitions.md` — state names, threshold mapping, transition priorities, and expected behavior per mode.
-- `doc/section_4_transition_mapping_by_owner.md` — Section 4 transitions mapped per responsible team member.
-- `doc/ecu_fixed_point_memory_report.md` — fixed-point design guidance and its application to the VMU integer API.
-
-### Test Suite
-
-The repository ships a transition-oriented test infrastructure built on the **Unity** framework. Tests are organized by the state-machine transition they exercise, rather than per author:
-
-| Suite | File | Scope |
-|---|---|---|
-| Standstill transitions | `test/test_standstill_transitions.c` | STANDSTILL entry/exit |
-| EV transitions | `test/test_ev_transitions.c` | Entries, exits, and guards for EV mode |
-| Regen-B transitions | `test/test_regenb_transitions.c` | Regenerative-braking transitions |
-| START → HYBRID/ICE | `test/test_start_to_hybrid_ice_and_resets.c` | Cranking path and reset behavior |
-| ICE/HYBRID transitions | `test/test_ice_hybrid_external_and_internal.c` | External and internal ICE/HYBRID transitions |
-
-> **Note:** the test files contain only `void test_*(void)` functions — no `main()`. The Unity test runner (`main` + `RUN_TEST(...)` calls) is **generated automatically** via `unity/auto/generate_test_runner.rb` per test file. See *Build and Run the C Tests* below.
-
-### Coverage Reports
-
-The `Test report/` folder is the versioned home for coverage artifacts produced against `src/mode_logic_team.c` using the Unity tests under `test/`. Three independent toolchains are exercised:
-
-- **branch coverage** with `gcc-11` + `lcov 1.14`
-- **native MC/DC** (Modified Condition / Decision Coverage) with `gcc-14` (`-fcondition-coverage`) + `gcov-14 --conditions`
-- **static MC/DC tree-likeness check** with `mcdc-checker` (Python + libclang-19)
-
-**Headline numbers (current state of the repo):**
-
-| Metric                       | Value                 | Source                        |
-|------------------------------|-----------------------|-------------------------------|
-| Unity tests                  | 141 / 0 failures      | 5 binaries combined           |
-| Functions                    | 100 % (41 / 41)       | `lcov`                        |
-| Lines                        | 97.28 % (286 / 294)   | `gcov-14`                     |
-| Branches                     | 98.00 % (98 / 100)    | `lcov` (lcov_branch_coverage) |
-| **C MC/DC condition outcomes** | **100.00 % (86 / 86)** | `gcov-14 --conditions`    |
-| **Stateflow native MC/DC**   | **100.00 % (39 / 39)** | Simulink Coverage R2026a    |
-| **Simulink↔C equivalence (live co-sim)** | **473 / 473 rows match (outputs + state)** | S-Function co-simulation |
-| Web-sim JS↔C differential    | 473 / 473 rows match  | `js-c-equivalence` CI job     |
-| Static MC/DC issues          | 0                     | `mcdc-checker`                |
-
-MC/DC is complete both under `gcov-14 --conditions` for the C implementation and under native Simulink Coverage for the Stateflow chart. See `Test report/README.md` for tool details and `Test report/MCDC_matrix.md` for the tests ↔ requirements mapping and per-decision MC/DC analysis.
-
-### Interactive Web Simulator
-
-`mode_logic_sim.html` is a standalone, dependency-free simulator for **interactive** exploration of the supervisory logic. Its transition logic now lives in `mode_logic.js` — a **faithful atomic-predicate port** of `mode_logic_team.c` that quantizes the physical inputs with the same `to_u16`/`to_s16` rule and runs the integer guards unchanged (loaded as a plain script, so the page still opens from `file://` with no build). That module is validated **deterministically** by `verification/js_equivalence/`: the ±1 LSB boundary stimulus (473 rows, reused from `equivalence_live/`) replays through the JS and matches the compiled C on **state and outputs — 0 mismatches**; MC/DC independence holds for every probed condition; and c8 branch coverage of the module is ~100%. This runs as its own CI job (`js-c-equivalence`), so the web simulator is now a **CI-gated** artifact. The authoritative gates remain the C implementation, the Unity tests, and the Simulink↔C / live-oracle equivalence.
-
-Features:
-
-- Real-time dashboard for the active mode and powertrain enables
-- Animated gauges for vehicle speed (km/h) and engine speed (RPM)
-- Telemetry charts: vehicle speed, power demand (`P_dem`), state of charge (`SOC`), engine speed (`wEng`), and mode-transition history
-- Manual control panel for all state variables
-- Pre-configured scenarios (EV, regenerative braking)
-- Automated drive cycles (short cycle and 1-minute continuous cycle) with automatic phase display
-- Transition history table with input/output values
-
-Open it in any modern browser — no build step or server required.
-
-## Getting Started
-
-### Open the Simulink Model
-
-1. Open MATLAB.
-2. Navigate to `Model/HEV_powersplit_adapted`.
-3. Open `HEV_powersplit_adapted.slx`.
-4. See the local `README.md` inside the model folder for model-specific notes and the linked requirements view.
-
-### Build, Run, and Cover the C Tests
-
-The full build and coverage flow is documented in [UnityExecution.md](UnityExecution.md). The transition test files contain only Unity test cases (`void test_*(void)`); the runner with `main()` is generated by Unity's helper script before compilation.
-
-Place the Unity sources at `unity/src/` (or clone the framework: `git clone --depth 1 https://github.com/ThrowTheSwitch/Unity.git unity`). The coverage scripts also accept `UNITY_SRC_DIR` and auto-detect `/home/vmu/unity/src` when `unity/src` is absent.
-
-#### Recommended path — full suite + coverage in one command
-
-Two self-contained scripts at the repo root generate the runners, compile every test against `src/mode_logic_team.c` + `unity.c`, run the 5 binaries, and write the resulting artifacts directly into `Test report/`:
-
-```bash
-# Branch + line coverage (gcc-11 + lcov)
-./run_branch_coverage.sh
-
-# Native MC/DC (gcc-14 -fcondition-coverage + gcov-14 --conditions)
-./run_mcdc_native.sh
-
-# Simulink↔C behavioral equivalence (replays the 265-row MC/DC stimulus)
-./run_simulink_c_equivalence.sh
-```
-
-The supported order is **(1) `run_branch_coverage.sh` → (2) `run_mcdc_native.sh` → (3) regenerate the static checker report if needed**. See `Test report/README.md` for the prerequisite toolchain (gcc-11, gcc-14 from `ppa:ubuntu-toolchain-r/test`, `lcov`, `libclang-19-dev`, `mcdc-checker`) and the static-check command.
-
- **Note for Windows users:** These scripts are intended to run in Linux/WSL and must use Unix line endings (`LF`). If a script was saved with Windows line endings (`CRLF`), Bash may fail with errors such as `/usr/bin/env: 'bash\r': No such file or directory`. Convert the scripts back to `LF` before running them.
-
- Example:
-
-```bash
-sed -i 's/\r$//' run_branch_coverage.sh run_mcdc_native.sh
-chmod +x run_mcdc_native.sh
-```
-
-#### Alternative — run a single suite manually
-
-Useful when you want to run just one transition suite (e.g. while debugging a specific test) or when the GCC 14 / lcov toolchain required by the scripts isn't available. This path skips the consolidated coverage report:
-
-```bash
-# 1. Generate the Unity runner (creates test/<TEST_FILE>_runner.c with main + RUN_TEST calls)
-ruby unity/auto/generate_test_runner.rb test/<TEST_FILE>.c test/<TEST_FILE>_runner.c
-
-# 2. Compile the suite together with the generated runner
-gcc -std=c99 -Wall -Wextra \
-    --coverage -fprofile-arcs -ftest-coverage -O0 \
-    -Iinc -Iunity/src \
-    src/mode_logic_team.c \
-    unity/src/unity.c \
-    test/<TEST_FILE>.c \
-    test/<TEST_FILE>_runner.c \
-    -o test_runner
-
-# 3. Run
-./test_runner
-```
-
-## Code Quality & Standards
-
-### MISRA C 2012 Compliance
-
-The project follows **MISRA C 2012** to ensure reliability and safety, with automated verification on every pull request.
-
-**Status:**
-- Minimum: 0 high-severity violations
-- Desirable: 0 high + 0 medium violations
-- Goal: zero violations
-
-**Key guidelines applied:**
-- `const` for input parameters (Rule 8.13)
-- Unsigned-integer suffixes (Rule 10.1)
-- Explicit type declarations (Rule 10)
-- Structured control flow (Rules 15, 16) — including the Rule 15.5 single-exit pattern
-- Static scope for internal functions (Rule 8.7)
-
-**References:**
-- [MISRA_QUICKSTART.md](MISRA_QUICKSTART.md) — developer quick-start
-- [MISRA_COMPLIANCE.md](MISRA_COMPLIANCE.md) — detailed rules and patterns
-
-**Local verification:**
-
-1. Install `cppcheck`:
-   ```bash
-   # Windows
-   winget install Cppcheck.Cppcheck
-   # macOS
-   brew install cppcheck
-   # Linux (Ubuntu/Debian)
-   sudo apt-get install cppcheck
-   ```
-
-2. Run static analysis with the project's MISRA addon (same scope and flags as CI — only `src/` and `inc/` are checked; `--inline-suppr` honors the in-source `cppcheck-suppress` directives that document the public-API false positives):
-   ```bash
-   cppcheck --enable=all --addon=misra --inline-suppr \
-            --suppress=missingIncludeSystem -Iinc src/ inc/
-   # or use the bundled script
-   python misra.py
-   ```
-
-   > **Note:** the `test/` folder is intentionally excluded from MISRA — Unity macros and test patterns are not meant to be MISRA-compliant.
-
-3. Build with strict warnings:
-   ```bash
-   gcc -Wall -Wextra -Werror -Iinc -o test_runner src/mode_logic_team.c test/<TEST_FILE>.c
-   ```
-
-### Continuous Integration
-
-GitHub Actions (`.github/workflows/ci.yaml`) runs on every pull request and on pushes to `main`, performing:
-
-1. **Static analysis** — cppcheck general checks plus a dedicated MISRA C 2012 pass. Because the Ubuntu `cppcheck` package omits the Python addons, the workflow fetches them from the upstream cppcheck source (matching the installed version) and then runs the MISRA addon manually over `cppcheck --dump` output, so any addon-internal Python error is visible in the log instead of being hidden behind a generic exit code.
-2. **Build and test** — fetches Unity, generates a runner per test file with `unity/auto/generate_test_runner.rb`, then compiles each transition suite against `src/mode_logic_team.c` + `unity.c` + the generated runner and runs the resulting binary.
-
-PR checks and downloadable analysis reports are available under the workflow run's "Checks" / "Artifacts" tabs.
-
-## Notes
-
-- `src/mode_logic_team.c` is the single C implementation maintained on `main`. Legacy per-author MC/DC suites and the `Person_E_Gustavo`/`shared_tests` folders were consolidated into the transition-oriented suites listed above.
-- `mode_logic_sim.html` consumes `mode_logic.js` (single source of truth), a faithful atomic-predicate port of `mode_logic_team.c`. It is validated deterministically by `verification/js_equivalence/` (473-row ±1 LSB differential vs the compiled C + Python mirror, 0 mismatches on state **and** outputs; MC/DC independence; ~100% branch coverage) and gated by the `js-c-equivalence` CI job. The C implementation, the Unity tests, and the Simulink↔C equivalence check remain the authoritative source of truth.
-- Generated Simulink artifacts under `Model/HEV_powersplit_adapted/slprj/` are intentionally not versioned; they are produced locally on first build.
-- The `Test report/` folder is **versioned on purpose** (the `.gitignore` whitelists it). Local `unity/` clones, raw `.gcov`/`.gcda`/`.gcno`/`.info` outside `Test report/`, and bare `coverage_html/` directories are ignored to keep CI clean.
-- The public-API entry points `ModeLogic_Init` and `ModeLogic_Step` carry inline `cppcheck-suppress` directives for `misra-c2012-8.7` (Rule 8.7 — internal linkage) and `unusedFunction`. Both are false positives: the functions are consumed by `test/` and external clients, so they cannot be `static` and are not actually unused.
-
-## License
-
-Model content derived from MathWorks example assets is governed by its own license file under:
-
-- `Model/HEV_powersplit_adapted/LICENSE.md`
+MathWorks-derived model assets retain their [included license](Model/HEV_powersplit_adapted/LICENSE.md). No repository-wide license is declared for the original project code.

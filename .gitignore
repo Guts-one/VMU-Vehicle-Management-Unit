@@ -1,54 +1,49 @@
-*.html
-*.gcov
+# Dependencies and generated output
+/unity/
+/Unity/
+/node_modules/
+/build/
+/coverage/
+/coverage_html/
+/output/
+*.o
+*.obj
+*.exe
 *.gcda
 *.gcno
+*.gcov
 *.info
-coverage_html/
-test_runner
-Unity/
-# Keep generated test reports versioned
-!Test report/
-!Test report/**
-# Interactive web simulator is a versioned deliverable
-!/mode_logic_sim.html
+*.dump
+*.ctu-info
+*_runner.c
+__pycache__/
+*.pyc
+/test_runner
+/cppcheck-report.txt
 
-# Local Codex/agent workspace files
+# Selected, readable coverage evidence
+!/reports/**/*.gcov
+!/reports/**/*.info
+
+# MATLAB / Simulink generated files
+slprj/
+*.slxc
+*.mexw64
+*.mexa64
+*.mexmaci64
+/verification/equivalence_live/sfun_mode_logic.c
+/verification/equivalence_live/sfun_mode_logic.tlc
+/verification/equivalence_live/rtwmakecfg.m
+/verification/equivalence_live/mode_logic_equiv_harness.slx
+/verification/equivalence_live/*_console.txt
+/verification/equivalence_live/*_log.txt
+
+# Local assistant and editor state
 /AGENTS.md
 /AGENTS.override.md
 /.agents/
 /.codex/
 /tmp/
-
-# >>> local claude code project quality scaffold >>>
-# Private local Claude Code files
 CLAUDE.md
 CLAUDE.local.md
 .claude/
-# <<< local claude code project quality scaffold <<<
-/test_mode_logic_team_update.exe
-
-# Compiled Simulink/C equivalence harness (build output)
-/verification/simulink_c_equivalence
-
-# Generated PDF exports (built locally)
-/output/pdf/
-
-# Live equivalence harness (MATLAB): generated S-Function/harness and run logs
-/verification/equivalence_live/slprj/
-/verification/equivalence_live/sfun_mode_logic.c
-/verification/equivalence_live/sfun_mode_logic.tlc
-/verification/equivalence_live/*.mexw64
-/verification/equivalence_live/rtwmakecfg.m
-/verification/equivalence_live/mode_logic_equiv_harness.slx
-/verification/equivalence_live/*.slxc
-/verification/equivalence_live/*_console.txt
-/verification/equivalence_live/*_log.txt
-
-# JS <-> C equivalence harness: Node deps + build artifacts (sources are tracked)
-/node_modules/
-/coverage/
-/verification/js_equivalence/mode_probe
-/verification/js_equivalence/mode_probe.exe
-/verification/js_equivalence/probe_out.csv
-/verification/js_equivalence/probe_summary.txt
-/verification/js_equivalence/js_out.csv

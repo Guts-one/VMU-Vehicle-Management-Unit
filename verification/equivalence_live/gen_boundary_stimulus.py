@@ -315,7 +315,7 @@ def build():
     # the chart and the quantized C agree exactly; replaying them in the live
     # harness closes chart MC/DC alongside the C-side boundary probes.
     _here = os.path.dirname(os.path.abspath(__file__))
-    _cm = os.path.join(_here, '..', '..', 'Test report',
+    _cm = os.path.join(_here, '..', '..', 'reports',
                        'simulink_native_mcdc', 'stimulus_and_outputs.csv')
     if os.path.isfile(_cm):
         emit('CHART_MCDC', 'reset', 'drive', RESET)
@@ -328,7 +328,7 @@ def build():
                 emit('chartmcdc:' + _r.get('scenario', 'row'),
                      str(_r.get('step', '')), 'chartmcdc', fx)
     else:
-        print('NOTE: chart MC/DC stimulus not found at', _cm, file=sys.stderr)
+        raise FileNotFoundError('Required chart MC/DC stimulus not found: ' + _cm)
 
     # ---- pass 2: continuous mirror to label predicted mode -----------------
     rows = []

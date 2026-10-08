@@ -21,7 +21,7 @@ end
 here = fileparts(mfilename('fullpath'));
 root = fileparts(fileparts(here));
 addpath(here);
-repPath = fullfile(root,'Test report','equivalence_live');
+repPath = fullfile(root,'build','equivalence_live');
 if ~exist(repPath,'dir'), mkdir(repPath); end
 
 % --- 1. build artifacts if needed -----------------------------------------
@@ -148,7 +148,7 @@ fclose(sfid);
 type(fullfile(repPath,'summary.txt'));
 
 fprintf('\nTo compare with the C-side MC/DC, run (in WSL):\n');
-fprintf('  ./run_mcdc_native.sh && python3 verification/equivalence_live/compare_coverage.py\n');
+fprintf('  bash scripts/run_mcdc_native.sh && python3 verification/equivalence_live/compare_coverage.py --reports-dir build\n');
 fprintf('\nReports written to %s\n', repPath);
 end
 

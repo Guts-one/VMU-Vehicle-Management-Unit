@@ -1,9 +1,0 @@
-# Cppcheck ignore file for VMU project
-# This file specifies false positives and expected warnings to be suppressed
-
-# Test files - less strict for unit testing purposes
-test/test_mode_logic.c:*
-
-# Standard library false positives
-# cppcheck has some issues with standard library headers
-*:missingIncludeSystem
