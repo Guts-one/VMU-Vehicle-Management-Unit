@@ -50,6 +50,8 @@ Coverage counts describe the exercised logic; they do not establish vehicle-leve
 
 The browser simulator opens directly from `mode_logic_sim.html`; no build is needed.
 
+Set an operating point and apply a controller step, explore the six mode presets, or play a scripted drive cycle. The instrument panel shows applied inputs and enable commands; telemetry, the session log, and CSV export expose the recorded steps. Inputs are prescribed, so the page does not simulate vehicle dynamics.
+
 For the C and JavaScript checks, install Node.js, Python 3, and GCC, then run from the repository root:
 
 ```sh
@@ -59,7 +61,7 @@ npm run test:c
 npm test
 ```
 
-`npm run test:c` runs the C unit suites. `npm test` checks JavaScript/C equivalence and JavaScript coverage. Generated output goes to `build/` and `coverage/`. See [testing instructions](docs/testing.md) for tool overrides, C coverage, recorded-stimulus replay, and MATLAB setup.
+`npm run test:c` runs the C unit suites. `npm test` checks JavaScript/C equivalence, controller coverage, and simulator session behavior. Generated output goes to `build/` and `coverage/`. See [testing instructions](docs/testing.md) for tool overrides, C coverage, recorded-stimulus replay, and MATLAB setup.
 
 ## Repository layout
 
@@ -69,6 +71,7 @@ src/            C controller
 inc/            Public C interface and calibrations
 test/           C unit tests
 verification/   Model/C and JavaScript/C harnesses
+web/            Browser interface, styles, and simulator session logic
 scripts/        Test and coverage runners
 docs/           Design, setup, requirements, and contribution records
 reports/        Selected verification evidence

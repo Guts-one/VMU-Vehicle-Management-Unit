@@ -26,7 +26,7 @@ See [build and test](docs/testing.md) for dependencies, static analysis, C cover
 
 - Open pull requests against `main`.
 - Review the diff and verification results before merging. Outside reviews are welcome, but no approval from another person is required for this solo-maintained continuation.
-- Wait for **Required CI** to pass. It requires successful static analysis, C unit tests, and JavaScript/C verification with JavaScript coverage. Update the branch if `main` has changed and rerun the checks.
+- Wait for **Required CI** to pass. It requires successful static analysis, C unit tests, JavaScript/C verification with controller coverage, and simulator session tests. Update the branch if `main` has changed and rerun the checks.
 - Prefer a squash merge, then delete the merged branch. Start the next change from the updated `main`.
 
 The branch rules are configured in GitHub. Existing administrator bypass permissions are reserved for recovery; they are not the normal review path. A local commit or green local tests do not replace the pull request and its required CI check.

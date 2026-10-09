@@ -22,6 +22,7 @@ The VMU started as a five-person residency project. Gustavo Igor da Silva mainta
 | Aligned requirements and the model with that interface; refreshed C and Stateflow coverage | [Model/requirements alignment](https://github.com/Guts-one/VMU-Vehicle-Management-Unit/commit/ecf4d74), [coverage refresh](https://github.com/Guts-one/VMU-Vehicle-Management-Unit/commit/555424e) |
 | Added recorded-stimulus replay, then live model/C co-simulation with state checks and boundary probes | [Replay harness](https://github.com/Guts-one/VMU-Vehicle-Management-Unit/commit/346e880), [live harness](https://github.com/Guts-one/VMU-Vehicle-Management-Unit/commit/fea18ae) |
 | Extracted and verified the browser logic against compiled C in CI | [JavaScript/C equivalence](https://github.com/Guts-one/VMU-Vehicle-Management-Unit/commit/5f74e49) |
+| Redesigned the browser interface, separated its session logic, and added session regression tests | [Simulator interface](../mode_logic_sim.html), [session layer](../web/simulator-session.js), [regression tests](../verification/simulator_ui.test.js) |
 
 ## Team contribution
 

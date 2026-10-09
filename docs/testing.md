@@ -13,7 +13,7 @@ npm run test:c
 
 Executables and generated runners go to `build/unit/`. Set `CC` to a GCC-compatible compiler executable and `UNITY_SRC_DIR` to the directory containing `unity.c` if they are not in the default locations.
 
-## JavaScript/C differential and JavaScript coverage
+## JavaScript/C differential, coverage, and simulator sessions
 
 Needs Node.js, Python 3, and GCC. The Python generator consumes the saved 265-row chart stimulus as part of its 473-row boundary sequence. Both state and output enables are checked against compiled C.
 
@@ -22,11 +22,12 @@ npm ci
 npm test
 ```
 
-To run the two stages separately:
+To run the stages separately:
 
 ```sh
 npm run verify
 npm run coverage
+npm run test:ui
 ```
 
 `PYTHON` and `CC` can select explicit executables. For example, in PowerShell:
@@ -38,6 +39,10 @@ npm test
 ```
 
 The compiled probe and comparison CSVs go to `build/js_equivalence/`; c8 writes to `coverage/`. `npm run equiv` reuses the compiled probe output from a prior `npm run verify`. `npm run equiv:mirror` only compares JavaScript with the Python-derived expectations; it does not invoke C.
+
+`npm run test:ui` needs only Node.js. It checks the simulator session layer: single-step transitions, invalid inputs, all preset destinations, reset versus clear, complete scripted cycles, CSV contents, and bounded recording. These tests do not render the page or establish browser accessibility.
+
+For interface changes, open `mode_logic_sim.html` directly or serve the repository with `python -m http.server 8765 --bind 127.0.0.1`. Check pending versus applied values, preset outputs, cycle pause/resume, CSV download, keyboard controls, and the help dialog. Inspect both desktop and narrow mobile layouts, including the scrollable session table, and check the browser console for errors.
 
 ## C coverage and recorded-stimulus replay
 
@@ -72,4 +77,4 @@ mcdc-checker src/mode_logic_team.c -I inc \
   > build/mcdc_static_checker/output.txt 2>&1
 ```
 
-This structural check is separate from measured MC/DC coverage. CI runs C unit tests, general/static analysis, JavaScript/C comparison, and JavaScript coverage; MATLAB and C coverage reports are generated locally.
+This structural check is separate from measured MC/DC coverage. CI runs C unit tests, general/static analysis, JavaScript/C comparison, controller coverage, and simulator session tests; MATLAB and C coverage reports are generated locally.
