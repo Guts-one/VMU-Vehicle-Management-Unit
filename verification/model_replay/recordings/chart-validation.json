@@ -1,0 +1,25 @@
+{
+  "matlab_version": "26.1.0.3346908 (R2026a) Update 5",
+  "cycles": [
+    {
+      "id": "urban1",
+      "samples": 1951,
+      "raw_chart_vs_plant_mismatches": 0,
+      "quantized_chart_vs_c_mismatches": 0,
+      "recording_sha256": "bf98515f3745fe6f3df20067dced3f7fce35c447a0b9a8d9045522f65d800f5c",
+      "fixed_input_sha256": "4f121b4370cb7d4ea8282bde9b12c07661959fd29eaa2fb35a67ec6179cb2ec8",
+      "c_output_sha256": "8c2f6c0ffb239f83720df3e111076c3c1f87064452c8270537abd191061a930c"
+    },
+    {
+      "id": "urban2",
+      "samples": 4001,
+      "raw_chart_vs_plant_mismatches": 0,
+      "quantized_chart_vs_c_mismatches": 0,
+      "recording_sha256": "51091ecf74554ce1dc7f5e2bd1fb49930ce17330053e0c1637f5d93a52a13ab2",
+      "fixed_input_sha256": "a4bddbc7ce4eaf81efa26fc8762ef3db85d38f0a8ae0740219f97f7d4e905613",
+      "c_output_sha256": "3cbc69a7b3dac2beee93d41dcbc910fdfb129b195c6303f04186d6fc53a45505"
+    }
+  ],
+  "source_model_sha256": "df0860d6b9c3aaf57e9b6c17ff71675d94ef1780dbfeb952fc2ebcb3a4b3d139",
+  "verifier_sha256": "406670c20988209f28ae3ed3347bac4bda6d28a052126f11e06c33313bd2f2ad"
+}

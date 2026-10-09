@@ -50,6 +50,8 @@ Coverage counts describe the exercised logic; they do not establish vehicle-leve
 
 The browser simulator opens directly from `mode_logic_sim.html`; no build is needed.
 
+Watch the 90-second Dynamic demo, set an operating point and apply a controller step, explore six controller test presets, or replay UrbanCycle1/UrbanCycle2 recorded from the full Simulink/Simscape vehicle model. The demo supplies continuously varying synthetic speed, RPM, demand, and SOC inputs; the JavaScript supervisor calculates its modes and enable commands. These inputs illustrate controller behavior, not vehicle dynamics or energy consumption. Model playback preserves the recorded synchronized inputs, modes, and enable commands. All cycles support pause/resume, 1×/4×/10× speed, and full-precision CSV export with distinct demo/model sources. The browser runs no live vehicle dynamics. See [recording provenance and model/C comparisons](verification/model_replay/README.md), including the observed quantization differences.
+
 For the C and JavaScript checks, install Node.js, Python 3, and GCC, then run from the repository root:
 
 ```sh
@@ -59,7 +61,7 @@ npm run test:c
 npm test
 ```
 
-`npm run test:c` runs the C unit suites. `npm test` checks JavaScript/C equivalence and JavaScript coverage. Generated output goes to `build/` and `coverage/`. See [testing instructions](docs/testing.md) for tool overrides, C coverage, recorded-stimulus replay, and MATLAB setup.
+`npm run test:c` runs the C unit suites. `npm test` checks JavaScript/C equivalence, controller coverage, recording integrity, and simulator session behavior. Generated output goes to `build/` and `coverage/`. See [testing instructions](docs/testing.md) for tool overrides, C coverage, recorded-stimulus replay, and MATLAB setup.
 
 ## Repository layout
 
@@ -69,6 +71,7 @@ src/            C controller
 inc/            Public C interface and calibrations
 test/           C unit tests
 verification/   Model/C and JavaScript/C harnesses
+web/            Browser interface, styles, and simulator session logic
 scripts/        Test and coverage runners
 docs/           Design, setup, requirements, and contribution records
 reports/        Selected verification evidence

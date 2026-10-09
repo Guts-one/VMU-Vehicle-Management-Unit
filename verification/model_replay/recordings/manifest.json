@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "model": "HEV_powersplit_adapted",
+  "chart": "Control/Mode Logic",
+  "generated_at_utc": "2026-10-09T11:54:13Z",
+  "matlab_version": "26.1.0.3346908 (R2026a) Update 5",
+  "sample_time_s": 0.1,
+  "electrical_variant": "System",
+  "solver": "ode23t",
+  "relative_tolerance": "1e-3",
+  "absolute_tolerance": "1e-3",
+  "capture": "Full plant; supervisor input and output signals sampled without interpolation.",
+  "state_names": [
+    "STANDSTILL",
+    "EV",
+    "REGENB",
+    "START",
+    "ICE",
+    "HYBRID"
+  ],
+  "products": [
+    {
+      "Name": "MATLAB",
+      "Version": "26.1",
+      "Release": "(R2026a)",
+      "Date": "19-Nov-2025"
+    },
+    {
+      "Name": "Simscape",
+      "Version": "26.1",
+      "Release": "(R2026a)",
+      "Date": "20-Nov-2025"
+    },
+    {
+      "Name": "Simscape Driveline",
+      "Version": "26.1",
+      "Release": "(R2026a)",
+      "Date": "20-Nov-2025"
+    },
+    {
+      "Name": "Simscape Electrical",
+      "Version": "26.1",
+      "Release": "(R2026a)",
+      "Date": "20-Nov-2025"
+    },
+    {
+      "Name": "Simulink",
+      "Version": "26.1",
+      "Release": "(R2026a)",
+      "Date": "20-Nov-2025"
+    },
+    {
+      "Name": "Stateflow",
+      "Version": "26.1",
+      "Release": "(R2026a)",
+      "Date": "20-Nov-2025"
+    }
+  ],
+  "sources": [
+    {
+      "path": "Model/HEV_powersplit_adapted/HEV_powersplit_adapted.slx",
+      "sha256": "df0860d6b9c3aaf57e9b6c17ff71675d94ef1780dbfeb952fc2ebcb3a4b3d139"
+    },
+    {
+      "path": "Model/HEV_powersplit_adapted/Scripts_Data/HEV_Model_PARAM.m",
+      "sha256": "a9636f39ccb117b9003cd51f75700eadf69ff20c7494a4c2dc4fd3b7877ea14b"
+    },
+    {
+      "path": "Model/HEV_powersplit_adapted/Scripts_Data/HEV_SeriesParallel_param_detailed.m",
+      "sha256": "66acacfcf735165ed3842c4b03ee763b81d03f506e96a1b5ab5638fb74d873f1"
+    },
+    {
+      "path": "Model/HEV_powersplit_adapted/Scripts_Data/HEV_SeriesParallel_config_electrical.m",
+      "sha256": "ccc87e2d5faaecb1521682629ce6cd2427caeae410cdfd891c9ba9fe44252da4"
+    },
+    {
+      "path": "Model/HEV_powersplit_adapted/Scripts_Data/FuelConsMap.mat",
+      "sha256": "eed65078397c91e978bd8b70e2101e2cd6c5173d5ce0cb5bd54771eafd75898a"
+    },
+    {
+      "path": "Model/HEV_powersplit_adapted/Scripts_Data/HEV_SeriesParallel_35kWCurrentRef.mat",
+      "sha256": "59fbf1d603cb0e35ff61933abd4536b8c6fa37537671925b27c37e90082c27b3"
+    },
+    {
+      "path": "Model/HEV_powersplit_adapted/Scripts_Data/UrbanCycle1.mat",
+      "sha256": "cce9abc2b1c16a32339d3af7eec7ff8a3df3e1697bc8c547cdbf8bac0ce3d3b4"
+    },
+    {
+      "path": "Model/HEV_powersplit_adapted/Scripts_Data/UrbanCycle2.mat",
+      "sha256": "c6528ffabd7ae7270e0a094c20a85305e271c691e99201f551e74e80de3d04a1"
+    },
+    {
+      "path": "verification/model_replay/export_replays.m",
+      "sha256": "4af93dd6d5901524d17a3232165ae8d2a61422b483ab0d3463328890cae12811"
+    }
+  ],
+  "cycles": [
+    {
+      "id": "urban1",
+      "name": "UrbanCycle1",
+      "duration_s": 195,
+      "samples": 1951,
+      "file": "urban1.csv",
+      "sha256": "bf98515f3745fe6f3df20067dced3f7fce35c447a0b9a8d9045522f65d800f5c",
+      "simulation_wall_time_s": 27.1615168,
+      "input_min": [
+        -0.004313073979575581,
+        792.46345069836468,
+        -8.65686815991044,
+        0.68915973068881908
+      ],
+      "input_max": [
+        49.999986287713035,
+        1234.5546226789061,
+        9.7182474368628515,
+        0.70000000000000007
+      ]
+    },
+    {
+      "id": "urban2",
+      "name": "UrbanCycle2",
+      "duration_s": 400,
+      "samples": 4001,
+      "file": "urban2.csv",
+      "sha256": "51091ecf74554ce1dc7f5e2bd1fb49930ce17330053e0c1637f5d93a52a13ab2",
+      "simulation_wall_time_s": 7.8216614,
+      "input_min": [
+        -0.004313073979575581,
+        792.46345069836468,
+        -23.874114785501174,
+        0.69602020752772575
+      ],
+      "input_max": [
+        119.99997686457648,
+        1855.7192638195268,
+        23.469865567615258,
+        0.72068664277866534
+      ]
+    }
+  ]
+}

@@ -126,6 +126,12 @@ jobs:
       - name: JavaScript branch coverage
         run: npm run coverage
 
+      - name: Simulator session regression tests
+        run: npm run test:ui
+
+      - name: Full-model recording integrity and C/JS replay
+        run: npm run test:replays
+
   required-checks:
     name: Required CI
     if: ${{ always() }}
