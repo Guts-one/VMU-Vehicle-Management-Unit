@@ -12,9 +12,9 @@
  *
  * Requirements addressed:
  *   SysHLR03 - Calibratable and Hysteretic Mode Transitions
- *   SwHLR01  - Execution Interface
- *   SwHLR10  - Unique Output Mapping
- *   SwHLR11  - Manual-Code Structure and Traceability
+ *   SwHLR01  - Initialization to Standstill
+ *   SwHLR02  - Mode-to-Output Mapping
+ *   SwHLR10  - Initialization and Invalid-Mode Recovery
  *
  * ============================================================ */
 

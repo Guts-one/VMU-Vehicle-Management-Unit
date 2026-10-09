@@ -2,7 +2,7 @@ function tm_create_and_run()
 %TM_CREATE_AND_RUN  Create + run the Test Manager equivalence test, headless.
 %   Creates mode_logic_equivalence.mldatx (simulation test + pre-load callback
 %   + custom criteria + Decision/Condition/MCDC coverage), runs it, prints the
-%   verdict, and generates a PDF report under Test report/equivalence_live/.
+%   verdict, and generates a PDF report under build/equivalence_live/.
 %   Logs everything to tm_test_log.txt (same diary pattern as verify_all.m).
 
 here = fileparts(mfilename('fullpath'));
@@ -21,9 +21,9 @@ fprintf('sltestmgr on path             : %s\n', which('sltestmgr'));
 assert(license('test','Simulink_Test')==1, ...
     'License does not include the Simulink_Test feature.');
 
-mldatx = fullfile(here,'mode_logic_equivalence.mldatx');
-repDir = fullfile(root,'Test report','equivalence_live');
+repDir = fullfile(root,'build','equivalence_live');
 if ~exist(repDir,'dir'), mkdir(repDir); end
+mldatx = fullfile(repDir,'mode_logic_equivalence.mldatx');
 
 % --- 1. fresh test file ------------------------------------------------------
 fprintf('\n---- STEP: create test file ----\n');

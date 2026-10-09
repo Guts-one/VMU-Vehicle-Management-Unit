@@ -20,11 +20,12 @@ var path = require('path');
 var REPO_ROOT = path.resolve(__dirname, '..', '..');
 var LIVE = path.join(REPO_ROOT, 'verification', 'equivalence_live');
 var HERE = __dirname;
+var BUILD = path.join(REPO_ROOT, 'build', 'js_equivalence');
 var STIMULUS = path.join(LIVE, 'boundary_stimulus.csv');
 var PROBE_SRC = path.join(LIVE, 'mode_probe.c');
 var MODE_SRC = path.join(REPO_ROOT, 'src', 'mode_logic_team.c');
-var PROBE_EXE = path.join(HERE, process.platform === 'win32' ? 'mode_probe.exe' : 'mode_probe');
-var PROBE_OUT = path.join(HERE, 'probe_out.csv');
+var PROBE_EXE = path.join(BUILD, process.platform === 'win32' ? 'mode_probe.exe' : 'mode_probe');
+var PROBE_OUT = path.join(BUILD, 'probe_out.csv');
 
 function run(cmd, args, opts) {
   console.log('\n$ ' + cmd + ' ' + args.join(' '));
@@ -42,25 +43,27 @@ function firstAvailable(cmds) {
 }
 
 function main() {
+  fs.mkdirSync(BUILD, { recursive: true });
   if (!fs.existsSync(PROBE_SRC)) {
     throw new Error('missing ' + PROBE_SRC + ' — this harness reuses verification/' +
       'equivalence_live/; make sure that folder is present in the checkout.');
   }
 
   // 1. Regenerate the boundary stimulus (deterministic).
-  var py = firstAvailable(['python3', 'python']);
+  var py = process.env.PYTHON || firstAvailable(['python3', 'python']);
   if (!py) { throw new Error('python3/python not found on PATH'); }
   run(py, ['gen_boundary_stimulus.py'], { cwd: LIVE });
 
   // 2. Compile the compiled-C oracle.
-  var cc = firstAvailable(['gcc', 'cc']);
+  var cc = process.env.CC || firstAvailable(['gcc', 'cc']);
   if (!cc) { throw new Error('gcc/cc not found on PATH'); }
-  run(cc, ['-std=c99', '-Wall', '-Wextra', '-I', path.join(REPO_ROOT, 'inc'),
-    PROBE_SRC, MODE_SRC, '-o', PROBE_EXE]);
+  run(cc, ['-std=c99', '-Wall', '-Wextra', '-I', 'inc',
+    path.relative(REPO_ROOT, PROBE_SRC), path.relative(REPO_ROOT, MODE_SRC),
+    '-o', path.relative(REPO_ROOT, PROBE_EXE)]);
 
   // 3. Run the oracle over the stimulus.
   console.log('\n$ mode_probe ' + path.relative(REPO_ROOT, STIMULUS));
-  var probe = cp.spawnSync(PROBE_EXE, [STIMULUS], { cwd: REPO_ROOT, encoding: 'utf8' });
+  var probe = cp.spawnSync(PROBE_EXE, [path.relative(REPO_ROOT, STIMULUS)], { cwd: REPO_ROOT, encoding: 'utf8' });
   if (probe.error) { throw probe.error; }
   fs.writeFileSync(PROBE_OUT, probe.stdout);
   process.stderr.write(probe.stderr || '');   // MODE_PROBE rows=.. result=..
@@ -69,7 +72,7 @@ function main() {
 
   // 4 + 5. JS<->C differential + MC/DC independence.
   run(process.execPath, [path.join(HERE, 'run_js_equivalence.js'),
-    '--probe-out', PROBE_OUT, '--out', path.join(HERE, 'js_out.csv')]);
+    '--probe-out', PROBE_OUT, '--out', path.join(BUILD, 'js_out.csv')]);
   run(process.execPath, [path.join(HERE, 'mcdc_independence_pairs.js')]);
 
   console.log('\nJS<->C equivalence gate: PASS');

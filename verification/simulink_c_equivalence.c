@@ -4,7 +4,8 @@
  *
  * Usage: simulink_c_equivalence <stimulus_and_outputs.csv> <c_outputs.csv>
  *
- * The stimulus CSV is produced by .codex/run_stateflow_native_mcdc.m:
+ * The recorded stimulus is retained in
+ * reports/simulink_native_mcdc/stimulus_and_outputs.csv:
  *   step,scenario,speed_kph,p_dem_kw,soc,weng_rpm,Mot_Enable,Gen_Enable,ICE_Enable
  *
  * Rows are applied in file order: the stimulus drives one sequential state

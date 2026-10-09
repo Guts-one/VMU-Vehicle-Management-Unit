@@ -18,10 +18,12 @@ if(~isempty(ver('parallel')))
 end
 
 if(open_start_content)
-    web(fullfile(scriptDir,'HEV_Model_Demo_Script.html'))
+    demoPage = fullfile(scriptDir,'HEV_Model_Demo_Script.html');
+    if isfile(demoPage)
+        web(demoPage)
+    end
     open_system('HEV_powersplit_adapted')
 end
-
 
 
 
