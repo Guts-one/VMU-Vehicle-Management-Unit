@@ -1,4 +1,4 @@
-/* Manual controller steps and recorded full-model playback for the simulator UI. */
+/* Controller tests, a synthetic demonstration, and recorded full-model playback. */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
@@ -60,6 +60,15 @@
       return result;
     }
 
+    demo(index) {
+      const sample = sampleDemo(index);
+      validate(sample.input);
+      const result = logic.stepPhysical(this.mode, sample.input);
+      this.record(sample.input, result.mode, result.outputs,
+        'Demo: ' + CYCLES.demo.name, sample.time, 'demo');
+      return { ...sample, ...result };
+    }
+
     replay(kind, index) {
       const sample = sampleCycle(kind, index);
       // Keep plant inputs, leaf state, and enable commands together. Re-running
@@ -109,11 +118,68 @@
     }
   }
 
-  const CYCLES = Object.freeze(Object.fromEntries(Object.entries(replays ? replays.cycles : {}).map(([id, cycle]) =>
-    [id, { name: cycle.name, duration: cycle.duration, samples: cycle.rows.length }])));
+  const CYCLES = Object.freeze({
+    demo: Object.freeze({ name: 'Dynamic drive', duration: 90, samples: 901, origin: 'demo' }),
+    ...Object.fromEntries(Object.entries(replays ? replays.cycles : {}).map(([id, cycle]) =>
+      [id, Object.freeze({ name: cycle.name, duration: cycle.duration, samples: cycle.rows.length, origin: 'model' })]))
+  });
+
+  // Scripted operating points, not a plant simulation. RPM, load, and SOC are
+  // supplied inputs; only the supervisor's mode and commands are calculated.
+  // Each moving segment varies continuously, with brief stops only at the ends.
+  // Columns: time (s), speed (km/h), RPM, demand (kW), SOC, segment description.
+  const DEMO_POINTS = [
+    [0,    0,    0,   0, 0.4800, 'Electric departure'],
+    [2,    6,    0,  10, 0.4799, 'City acceleration'],
+    [5,   24,    0,  18, 0.4796, 'City acceleration'],
+    [9,   33,    0,  22, 0.4791, 'City braking'],
+    [12,  27,    0, -12, 0.4790, 'City braking'],
+    [15,  19,    0, -18, 0.4792, 'City braking'],
+    [18,   8,    0,  -6, 0.4794, 'Electric restart'],
+    [20,   3,    0,   8, 0.4793, 'Electric acceleration'],
+    [25,  32,    0,  26, 0.4788, 'Engine start'],
+    [28,  46,  600,  43, 0.4782, 'Hybrid acceleration'],
+    [30,  57, 1600,  51, 0.4777, 'Hybrid acceleration'],
+    [35,  82, 3400,  60, 0.4766, 'Load release'],
+    [39,  96, 2600,   8, 0.4762, 'Overtake'],
+    [43, 110, 4200,  47, 0.4752, 'Overtake'],
+    [46, 121, 4600,  55, 0.4742, 'Highway braking'],
+    [49, 104, 3500, -24, 0.4745, 'Regenerative braking'],
+    [52,  86, 2200, -31, 0.4751, 'Regenerative braking'],
+    [55,  61, 1000, -16, 0.4757, 'Return to electric drive'],
+    [58,  42,  900,   8, 0.4761, 'Return to electric drive'],
+    [61,  30,  900,  15, 0.4758, 'Electric acceleration'],
+    [62,  31,    0,  18, 0.4757, 'Engine start'],
+    [64,  46,  600,  44, 0.4753, 'Second acceleration'],
+    [66,  58, 1500,  54, 0.4747, 'Second acceleration'],
+    [69,  74, 3200,  42, 0.4740, 'Load release'],
+    [72,  66, 2600,   7, 0.4742, 'Return braking'],
+    [75,  54, 1900, -18, 0.4746, 'Return braking'],
+    [78,  34,  800, -23, 0.4752, 'Return braking'],
+    [81,  14,    0,  -8, 0.4758, 'Approaching stop'],
+    [86,   7,    0,  -3, 0.4760, 'Approaching stop'],
+    [90,   0,    0,   0, 0.4761, 'Stopped']
+  ];
+
+  function sampleDemo(index) {
+    if (!Number.isInteger(index) || index < 0 || index >= CYCLES.demo.samples) {
+      throw new RangeError('Invalid demonstration sample index.');
+    }
+    const time = index / 10;
+    const right = DEMO_POINTS.findIndex(point => point[0] >= time);
+    const to = DEMO_POINTS[right], from = DEMO_POINTS[Math.max(0, right - 1)];
+    const ratio = right === 0 ? 0 : (time - from[0]) / (to[0] - from[0]);
+    const blend = ratio * ratio * (3 - 2 * ratio);
+    const interpolate = (column, precision) => Number((from[column] + (to[column] - from[column]) * blend).toFixed(precision));
+    return {
+      time,
+      phase: index === CYCLES.demo.samples - 1 ? 'Stopped' : from[5],
+      input: { speed: interpolate(1, 2), wEng: interpolate(2, 0), P_dem: interpolate(3, 2), SOC: interpolate(4, 5) }
+    };
+  }
 
   function sampleCycle(kind, index) {
-    if (!CYCLES[kind] || !Number.isInteger(index) || index < 0 || index >= CYCLES[kind].samples) {
+    if (!CYCLES[kind] || CYCLES[kind].origin !== 'model' || !Number.isInteger(index) || index < 0 || index >= CYCLES[kind].samples) {
       throw new RangeError('Invalid recording or sample index.');
     }
     const row = replays.cycles[kind].rows[index];
@@ -123,5 +189,5 @@
     };
   }
 
-  return { Session, DEFAULT_INPUTS, INPUTS, PRESETS, CYCLES, MAX_RECORDS, sampleCycle };
+  return { Session, DEFAULT_INPUTS, INPUTS, PRESETS, CYCLES, MAX_RECORDS, sampleCycle, sampleDemo };
 });

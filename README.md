@@ -50,7 +50,7 @@ Coverage counts describe the exercised logic; they do not establish vehicle-leve
 
 The browser simulator opens directly from `mode_logic_sim.html`; no build is needed.
 
-Set an operating point and apply a controller step, explore six controller test presets, or replay UrbanCycle1/UrbanCycle2 recorded from the full Simulink/Simscape vehicle model. Playback preserves the model's synchronized inputs, modes, and enable commands, with 1×/4×/10× speed and full-precision CSV export. Manual steps run the JavaScript controller; the browser runs no live vehicle dynamics. See [recording provenance and model/C comparisons](verification/model_replay/README.md), including the observed quantization differences.
+Watch the 90-second Dynamic demo, set an operating point and apply a controller step, explore six controller test presets, or replay UrbanCycle1/UrbanCycle2 recorded from the full Simulink/Simscape vehicle model. The demo supplies continuously varying synthetic speed, RPM, demand, and SOC inputs; the JavaScript supervisor calculates its modes and enable commands. These inputs illustrate controller behavior, not vehicle dynamics or energy consumption. Model playback preserves the recorded synchronized inputs, modes, and enable commands. All cycles support pause/resume, 1×/4×/10× speed, and full-precision CSV export with distinct demo/model sources. The browser runs no live vehicle dynamics. See [recording provenance and model/C comparisons](verification/model_replay/README.md), including the observed quantization differences.
 
 For the C and JavaScript checks, install Node.js, Python 3, and GCC, then run from the repository root:
 

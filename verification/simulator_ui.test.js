@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const ML = require('../mode_logic.js');
 const recordings = require('../web/model-replays.js');
-const { Session, DEFAULT_INPUTS, PRESETS, CYCLES, MAX_RECORDS, sampleCycle } = require('../web/simulator-session.js');
+const { Session, DEFAULT_INPUTS, INPUTS, PRESETS, CYCLES, MAX_RECORDS, sampleCycle, sampleDemo } = require('../web/simulator-session.js');
 
 test('a manual step evaluates exactly one transition and snapshots its applied input', () => {
   const session = new Session();
@@ -136,4 +136,83 @@ test('the bounded log and export retain the latest samples without resetting ste
   assert.equal(session.records.length, MAX_RECORDS);
   assert.equal(session.records[0].step, 6);
   assert.equal(session.csv().trim().split('\r\n').length, MAX_RECORDS + 1);
+});
+
+test('the synthetic drive is deterministic, bounded, smooth, and keeps speed moving', () => {
+  let previous, longestHold = 0, hold = 0;
+  const maxima = { speed: 1.3, wEng: 140, P_dem: 4, SOC: 0.00006 };
+  for (let index = 0; index < CYCLES.demo.samples; index += 1) {
+    const sample = sampleDemo(index);
+    assert.deepEqual(sample, sampleDemo(index));
+    assert.equal(sample.time, index / 10);
+    assert.equal(typeof sample.phase, 'string');
+    assert.equal(sample.mode, undefined); // The trajectory does not prescribe a controller result.
+    for (const field of INPUTS) {
+      const value = sample.input[field.key] * field.scale;
+      assert.ok(Number.isFinite(value) && value >= field.min && value <= field.max, field.key);
+      if (previous) {
+        assert.ok(Math.abs(sample.input[field.key] - previous[field.key]) <= maxima[field.key] + 1e-9, field.key + ' changes smoothly');
+      }
+    }
+    hold = previous && sample.input.speed === previous.speed ? hold + 1 : 0;
+    longestHold = Math.max(longestHold, hold);
+    previous = sample.input;
+  }
+  assert.ok(longestHold < 5, 'no half-second speed plateaus');
+  assert.equal(sampleDemo(0).input.speed, 0);
+  assert.deepEqual(sampleDemo(900).input, { speed: 0, wEng: 0, P_dem: 0, SOC: 0.4761 });
+  const copy = sampleDemo(430);
+  copy.input.speed = 0;
+  assert.equal(sampleDemo(430).input.speed, 110);
+  for (const index of [-1, 0.5, NaN, Infinity, 901]) {
+    assert.throws(() => sampleDemo(index), RangeError);
+    const session = new Session();
+    assert.throws(() => session.demo(index), RangeError);
+    assert.equal(session.steps, 0);
+  }
+  assert.throws(() => sampleCycle('demo', 0), RangeError);
+});
+
+test('the demo evaluates the real supervisor through all six modes and returns to rest', () => {
+  const session = new Session(), modes = new Set();
+  let expectedMode = ML.MODE_STANDSTILL;
+  for (let index = 0; index < CYCLES.demo.samples; index += 1) {
+    const sample = sampleDemo(index);
+    const expected = ML.stepPhysical(expectedMode, sample.input);
+    expectedMode = expected.mode;
+    const result = session.demo(index);
+    assert.equal(result.mode, expected.mode);
+    assert.deepEqual(result.outputs, expected.outputs);
+    assert.deepEqual(session.input, sample.input);
+    assert.equal(session.records.at(-1).time, sample.time);
+    assert.equal(session.origin, 'demo');
+    modes.add(session.mode);
+    if (index === 50) assert.equal(session.mode, ML.MODE_EV);
+    if (index === 150) assert.equal(session.mode, ML.MODE_REGENB);
+    if (index === 270) assert.equal(session.mode, ML.MODE_START);
+    if (index === 350) assert.equal(session.mode, ML.MODE_HYBRID);
+    if (index === 390) assert.equal(session.mode, ML.MODE_ICE);
+    if (index === 610) assert.equal(session.mode, ML.MODE_EV);
+  }
+  assert.deepEqual([...modes].sort(), [0, 1, 2, 3, 4, 5]);
+  assert.equal(session.mode, ML.MODE_STANDSTILL);
+  assert.deepEqual(session.outputs, { Mot_Enable: 0, Gen_Enable: 0, ICE_Enable: 0 });
+  assert.equal(session.steps, 901);
+  assert.equal(session.records.length, 901);
+});
+
+test('demo, model and manual records remain distinguishable in mixed sessions and CSV', () => {
+  const session = new Session();
+  session.replay('urban1', 948);
+  const expected = ML.stepPhysical(session.mode, sampleDemo(430).input);
+  session.demo(430);
+  assert.equal(session.mode, expected.mode);
+  assert.equal(session.origin, 'demo');
+  session.step(DEFAULT_INPUTS);
+  assert.equal(session.origin, 'controller');
+  const rows = session.csv().trim().split('\r\n').slice(1).map(row => row.split(',').map(value => value.slice(1, -1)));
+  assert.equal(rows[0][2], 'Model: UrbanCycle1');
+  assert.deepEqual(rows[1].slice(0, 4), ['2', '43.0', 'Demo: Dynamic drive', ML.STATE_NAMES[expected.mode]]);
+  assert.deepEqual(rows[1].slice(4).map(Number), [110, 4200, 47, 0.4752, expected.outputs.Mot_Enable, expected.outputs.Gen_Enable, expected.outputs.ICE_Enable]);
+  assert.deepEqual(rows[2].slice(1, 3), ['', 'Manual']);
 });

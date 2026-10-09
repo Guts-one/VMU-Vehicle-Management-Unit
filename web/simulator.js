@@ -15,11 +15,11 @@
     'System at rest', 'Electric drive', 'Regenerative braking',
     'Engine start requested', 'Engine-supported drive', 'Combined electric & engine drive'
   ];
-  const MODE_COLORS = ['#7890aa', '#63c6a1', '#59bcc8', '#e9ba67', '#a4b8ce', '#79aaf0'];
+  const MODE_COLORS = ['#929ba2', '#90bca6', '#afc8d5', '#edaa78', '#c1c7cc', '#bdd0dc'];
   let activeTab = 'telemetry';
   let selectedPreset = 0;
   let phase = 'Manual';
-  let cycle = { running: false, paused: false, kind: 'urban1', rate: 1, elapsed: 0, next: 0, started: 0, timer: null };
+  let cycle = { running: false, paused: false, kind: 'demo', rate: 1, elapsed: 0, next: 0, started: 0, timer: null };
 
   function announce(message) { $('announcement').textContent = message; }
   function signed(value) { return (value >= 0 ? '+' : '') + value.toFixed(1); }
@@ -28,28 +28,34 @@
     const radians = degrees * Math.PI / 180;
     return [160 + radius * Math.cos(radians), 160 + radius * Math.sin(radians)];
   }
-  function arc(radius) {
-    return 'M' + point(radius, 135).join(',') + ' A' + radius + ',' + radius + ' 0 1 1 ' + point(radius, 405).join(',');
+  function arc(radius, start = 135, end = 405) {
+    return 'M' + point(radius, start).join(',') + ' A' + radius + ',' + radius + ' 0 ' + (end - start > 180 ? 1 : 0) + ' 1 ' + point(radius, end).join(',');
   }
   function buildGauge(id, multiplier) {
-    let markup = '<path class="dial-rim" d="' + arc(153) + '"/><path class="dial-arc" d="' + arc(147) + '"/>';
+    // Keep the value at the center. Only the perimeter moves, so an indicator
+    // never crosses a readout or hides a calibrated scale label.
+    let markup = '<path class="dial-track" d="' + arc(132) + '"/>';
+    markup += '<path class="dial-active" pathLength="100" d="' + arc(132) + '"/>';
     for (let i = 0; i <= 70; i += 1) {
       const angle = 135 + i / 70 * 270;
       const major = i % 10 === 0;
-      const from = point(140, angle);
-      const to = point(major ? 126 : 134, angle);
+      const from = point(137, angle);
+      const to = point(major ? 123 : 130, angle);
       markup += '<line class="dial-tick' + (major ? ' major' : '') + '" x1="' + from[0] + '" y1="' + from[1] + '" x2="' + to[0] + '" y2="' + to[1] + '"/>';
       if (major) {
-        const label = point(112, angle);
+        const label = point(154, angle);
         markup += '<text class="dial-number" x="' + label[0] + '" y="' + label[1] + '">' + (i / 10 * multiplier) + '</text>';
       }
     }
-    const end = point(128, 135);
-    markup += '<g class="dial-needle"><line x1="160" y1="160" x2="' + end[0] + '" y2="' + end[1] + '"/><circle cx="160" cy="160" r="3"/></g>';
+    const from = point(141, 135), to = point(123, 135);
+    markup += '<g class="dial-marker"><line x1="' + from[0] + '" y1="' + from[1] + '" x2="' + to[0] + '" y2="' + to[1] + '"/></g>';
     $(id).querySelector('svg').innerHTML = markup;
   }
   function setGauge(id, value, maximum, label) {
-    $(id).querySelector('.dial-needle').style.transform = 'rotate(' + value / maximum * 270 + 'deg)';
+    // Clamp drawing only; preserve the raw model inputs in the session and CSV.
+    const fraction = Math.max(0, Math.min(1, value / maximum));
+    $(id).querySelector('.dial-active').style.strokeDasharray = (fraction * 100) + ' 100';
+    $(id).querySelector('.dial-marker').style.transform = 'rotate(' + fraction * 270 + 'deg)';
     $(id).setAttribute('aria-label', label);
   }
 
@@ -114,14 +120,14 @@
     const draft = readDraft();
     const invalid = draft.errors.length > 0;
     const pending = invalid || SIM.INPUTS.some(field => Math.abs(draft.input[field.key] * field.scale - Number(formatInput(field, session.input[field.key]))) > 1e-9);
-    $('inputStatus').textContent = invalid ? 'Check inputs' : pending ? 'Pending' : session.origin === 'model' ? 'Model record' : 'Applied';
+    $('inputStatus').textContent = invalid ? 'Check inputs' : pending ? 'Pending' : session.origin === 'model' ? 'Model record' : session.origin === 'demo' ? 'Demo inputs' : 'Applied';
     $('inputStatus').className = invalid ? 'invalid' : pending ? 'pending' : '';
     $('inputFeedback').classList.toggle('invalid', invalid);
     if (invalid) {
       const field = draft.errors[0].field;
       $('inputFeedback').textContent = field.label + ': enter ' + field.min + '–' + field.max + ' ' + field.unit + ' in steps of ' + field.step + '.';
     } else {
-      $('inputFeedback').textContent = pending ? 'Changes pending. Apply step to update instruments.' : session.origin === 'model' ? 'Recorded values shown rounded. CSV keeps full precision.' : 'Instruments show the applied values.';
+      $('inputFeedback').textContent = pending ? 'Changes pending. Apply step to update instruments.' : session.origin === 'model' ? 'Recorded values shown rounded. CSV keeps full precision.' : session.origin === 'demo' ? 'Scripted inputs. Modes calculated by the JS controller.' : 'Instruments show the applied values.';
     }
     return draft;
   }
@@ -150,8 +156,9 @@
     const input = session.input;
     $('modeRead').textContent = ML.STATE_NAMES[session.mode];
     $('modeDescription').textContent = MODE_DESCRIPTIONS[session.mode];
-    $('speedRead').textContent = Number(input.speed.toFixed(1)).toFixed(1);
-    $('sourceRead').textContent = session.origin === 'model' ? 'Simulink recording · inputs, mode and commands' : 'Manual controller · JavaScript';
+    const speedParts = Number(input.speed.toFixed(1)).toFixed(1).split('.');
+    $('speedRead').innerHTML = speedParts[0] + '<span class="gauge-decimal">.' + speedParts[1] + '</span>';
+    $('sourceRead').textContent = session.origin === 'model' ? 'Simulink recording · inputs, mode and commands' : session.origin === 'demo' ? 'Dynamic demo · synthetic inputs · JavaScript controller' : 'Manual controller · JavaScript';
     $('rpmRead').textContent = Math.round(input.wEng).toLocaleString('en-US');
     $('socRead').textContent = (input.SOC * 100).toFixed(1);
     $('powerRead').textContent = signed(input.P_dem);
@@ -162,7 +169,7 @@
       $(id).classList.toggle('enabled', enabled);
       $(id).querySelector('dd').textContent = enabled ? 'ON' : 'OFF';
     });
-    [...$('batteryMeter').children].forEach((cell, index) => cell.classList.toggle('filled', index < Math.round(input.SOC * 24)));
+    $('batteryMeter').style.setProperty('--charge', (Math.max(0, Math.min(1, input.SOC)) * 100) + '%');
     const power = $('powerFill');
     power.style.left = ((40 + Math.min(0, input.P_dem)) / 120 * 100) + '%';
     power.style.width = (Math.abs(input.P_dem) / 120 * 100) + '%';
@@ -172,6 +179,7 @@
     $('stepBtn').disabled = cycle.running;
     $('cycleSelect').disabled = cycle.running;
     $('cycleBtn').textContent = cycle.running ? 'Pause' : cycle.paused ? 'Resume' : 'Play';
+    $('cycleNote').textContent = SIM.CYCLES[cycle.kind].origin === 'demo' ? 'Synthetic drive · live controller decisions. Play starts a new session.' : 'Full vehicle model recordings. Play starts a new session.';
     $('phaseRead').textContent = phase;
     $('stepRead').textContent = session.steps;
     const progress = cycle.elapsed / SIM.CYCLES[cycle.kind].duration * 100;
@@ -186,10 +194,10 @@
   }
 
   const CHARTS = [
-    { id: 'speedChart', readout: 'speedChartValue', key: 'speed', scale: 1, min: 0, max: 140, color: '#67b1fc', unit: 'km/h' },
-    { id: 'rpmChart', readout: 'rpmChartValue', key: 'wEng', scale: 1, min: 0, max: 7000, color: '#d9ad72', unit: 'rpm' },
-    { id: 'powerChart', readout: 'powerChartValue', key: 'P_dem', scale: 1, min: -40, max: 80, color: '#7ec6d7', unit: 'kW' },
-    { id: 'chargeChart', readout: 'chargeChartValue', key: 'SOC', scale: 100, min: 0, max: 100, color: '#63c6a1', unit: '%' }
+    { id: 'speedChart', readout: 'speedChartValue', key: 'speed', scale: 1, min: 0, max: 140, color: '#afc8d5', unit: 'km/h' },
+    { id: 'rpmChart', readout: 'rpmChartValue', key: 'wEng', scale: 1, min: 0, max: 7000, color: '#edaa78', unit: 'rpm' },
+    { id: 'powerChart', readout: 'powerChartValue', key: 'P_dem', scale: 1, min: -40, max: 80, color: '#90bca6', unit: 'kW' },
+    { id: 'chargeChart', readout: 'chargeChartValue', key: 'SOC', scale: 100, min: 0, max: 100, color: '#bdd0dc', unit: '%' }
   ];
   function drawChart(spec) {
     const canvas = $(spec.id), width = canvas.clientWidth, height = canvas.clientHeight;
@@ -212,14 +220,14 @@
     for (let i = 0; i <= 4; i += 1) {
       const value = minimum + (spec.max - minimum) * i / 4;
       const py = y(value);
-      context.strokeStyle = '#293d53';
+      context.strokeStyle = '#2b3034';
       context.beginPath(); context.moveTo(pad.left, py); context.lineTo(width - pad.right, py); context.stroke();
-      context.fillStyle = '#a3b5ca'; context.textAlign = 'right';
+      context.fillStyle = '#939da4'; context.textAlign = 'right';
       context.fillText(Number(value.toFixed(1)).toString(), pad.left - 6, py + 3);
     }
     for (let i = 0; i <= 4; i += 1) {
       const px = pad.left + plotWidth * i / 4;
-      context.strokeStyle = '#213248';
+      context.strokeStyle = '#24292d';
       context.beginPath(); context.moveTo(px, pad.top); context.lineTo(px, height - pad.bottom); context.stroke();
     }
     if (records.length) {
@@ -235,7 +243,7 @@
       const value = last.input[spec.key] * spec.scale;
       context.fillStyle = spec.color;
       context.beginPath(); context.arc(x(last.step), y(value), 2.5, 0, Math.PI * 2); context.fill();
-      context.fillStyle = '#a3b5ca'; context.textAlign = 'left';
+      context.fillStyle = '#939da4'; context.textAlign = 'left';
       context.fillText(String(firstStep), pad.left, height - 6);
       if (records.length > 1) {
         context.textAlign = 'right'; context.fillText(String(last.step), width - pad.right, height - 6);
@@ -243,7 +251,7 @@
       $(spec.readout).textContent = (spec.key === 'wEng' ? Math.round(value) : value.toFixed(1)) + ' ' + spec.unit;
       canvas.setAttribute('aria-label', records.length + ' recorded samples; latest value ' + value.toFixed(1) + ' ' + spec.unit + '. Full precision is available in the CSV export.');
     } else {
-      context.fillStyle = '#a3b5ca'; context.textAlign = 'center';
+      context.fillStyle = '#939da4'; context.textAlign = 'center';
       context.fillText('No samples yet', pad.left + plotWidth / 2, pad.top + plotHeight / 2);
       $(spec.readout).textContent = '—';
       canvas.setAttribute('aria-label', 'No recorded samples. Apply a step or run a cycle.');
@@ -265,7 +273,7 @@
       ).join('');
       $('modeTrack').setAttribute('aria-label', 'Recent mode sequence: ' + (groups.map(group => ML.STATE_NAMES[group.mode]).join(', ') || 'no samples'));
     } else if (activeTab === 'log') {
-      $('logNote').textContent = session.records.length > 100 ? 'Latest 100 samples. CSV includes all ' + session.records.length + ' retained samples (limit: 6,000), with source and full precision.' : 'Manual steps and model records, newest first. CSV includes source and full precision.';
+      $('logNote').textContent = session.records.length > 100 ? 'Latest 100 samples. CSV includes all ' + session.records.length + ' retained samples (limit: 6,000), with source and full precision.' : 'Applied samples, newest first. CSV includes source and full precision.';
       $('logBody').innerHTML = session.records.length ? session.records.slice(-100).reverse().map(record => {
         const input = record.input;
         const values = [record.step, ML.STATE_NAMES[record.mode], input.speed.toFixed(1), Math.round(input.wEng), input.P_dem.toFixed(1), (input.SOC * 100).toFixed(1)];
@@ -292,12 +300,13 @@
     cycle = { running: false, paused: false, kind: $('cycleSelect').value, rate: Number($('playbackRate').value), elapsed: 0, next: 0, started: 0, timer: null };
   }
   function advanceCycle() {
-    const duration = SIM.CYCLES[cycle.kind].duration;
+    const spec = SIM.CYCLES[cycle.kind], duration = spec.duration;
     cycle.elapsed = Math.min(duration, (performance.now() - cycle.started) / 1000 * cycle.rate);
     const end = Math.min(Math.floor((cycle.elapsed + 1e-7) * 10), duration * 10);
-    // Playback rate affects wall time only. Never skip or interpolate model samples.
+    // Rate changes wall time only: evaluate every demo step or retain every model sample.
+    let sample;
     while (cycle.next <= end) {
-      session.replay(cycle.kind, cycle.next);
+      sample = spec.origin === 'demo' ? session.demo(cycle.next) : session.replay(cycle.kind, cycle.next);
       cycle.next += 1;
     }
     setInputs(session.input);
@@ -307,8 +316,12 @@
       cycle.running = false;
       cycle.paused = false;
       phase = 'Complete · ' + duration + ' s';
-      announce('Model playback complete. ' + session.records.length + ' samples.');
-    } else phase = 'Model time · ' + ((cycle.next - 1) / 10).toFixed(1) + ' / ' + duration + ' s';
+      announce(spec.name + ' complete. ' + session.records.length + ' samples.');
+    } else {
+      const time = ((cycle.next - 1) / 10).toFixed(1) + ' / ' + duration + ' s';
+      // A rate change can render between samples, so derive the current segment if needed.
+      phase = spec.origin === 'demo' ? (sample || SIM.sampleDemo(cycle.next - 1)).phase + ' · ' + time : 'Model time · ' + time;
+    }
     render();
   }
   function pauseCycle() {
@@ -321,7 +334,7 @@
     cycle.paused = true;
     phase = 'Paused · ' + ((cycle.next - 1) / 10).toFixed(1) + ' s';
     render();
-    announce('Model playback paused.');
+    announce(SIM.CYCLES[cycle.kind].name + ' paused.');
   }
   function toggleCycle() {
     if (cycle.running) { pauseCycle(); return; }
@@ -336,7 +349,7 @@
     cycle.started = performance.now() - cycle.elapsed / cycle.rate * 1000;
     advanceCycle();
     cycle.timer = setInterval(advanceCycle, 100);
-    announce('Model playback running at ' + cycle.rate + ' times speed.');
+    announce(SIM.CYCLES[cycle.kind].name + ' running at ' + cycle.rate + ' times speed.');
   }
   function selectTab(name, focus) {
     activeTab = name;
@@ -365,7 +378,6 @@
   buildControls();
   buildGauge('rpmGauge', 1);
   buildGauge('speedGauge', 20);
-  $('batteryMeter').innerHTML = '<i></i>'.repeat(24);
   buildThresholds();
   setInputs(session.input);
   $('inputForm').addEventListener('submit', event => { event.preventDefault(); applyStep(); });
