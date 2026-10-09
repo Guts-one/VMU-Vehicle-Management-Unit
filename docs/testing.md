@@ -27,6 +27,7 @@ To run the stages separately:
 ```sh
 npm run verify
 npm run coverage
+npm run test:replays
 npm run test:ui
 ```
 
@@ -40,9 +41,11 @@ npm test
 
 The compiled probe and comparison CSVs go to `build/js_equivalence/`; c8 writes to `coverage/`. `npm run equiv` reuses the compiled probe output from a prior `npm run verify`. `npm run equiv:mirror` only compares JavaScript with the Python-derived expectations; it does not invoke C.
 
-`npm run test:ui` needs only Node.js. It checks the simulator session layer: single-step transitions, invalid inputs, all preset destinations, reset versus clear, complete scripted cycles, CSV contents, and bounded recording. These tests do not render the page or establish browser accessibility.
+`npm run test:replays` checks the full-model recording hashes, reruns compiled C and JavaScript on all 5,952 samples, verifies saved chart evidence, and checks the browser data bundle. It needs Node.js and GCC; MATLAB is needed only to regenerate recordings and chart evidence. See [recording provenance and reproduction](../verification/model_replay/README.md). The recorded source model and the fixed-point C/JS replay have 147 differing samples; those differences are preserved and documented.
 
-For interface changes, open `mode_logic_sim.html` directly or serve the repository with `python -m http.server 8765 --bind 127.0.0.1`. Check pending versus applied values, preset outputs, cycle pause/resume, CSV download, keyboard controls, and the help dialog. Inspect both desktop and narrow mobile layouts, including the scrollable session table, and check the browser console for errors.
+`npm run test:ui` needs only Node.js. It checks single-step transitions, invalid inputs, preset destinations, reset versus clear, every recorded input/mode/command, the distinction between model playback and manual JS steps, CSV precision, and bounded recording. These tests do not render the page or establish browser accessibility.
+
+For interface changes, open `mode_logic_sim.html` directly or serve the repository with `python -m http.server 8765 --bind 127.0.0.1`. Check pending versus applied values, preset outputs, model pause/resume, speed changes, complete playback (1,951/4,001 samples), CSV download, keyboard controls, and help. Verify that playback identifies its model source and that changing to a manual step restores the JS source label. Inspect desktop and narrow mobile layouts, including the scrollable session table, and check the browser console for errors.
 
 ## C coverage and recorded-stimulus replay
 

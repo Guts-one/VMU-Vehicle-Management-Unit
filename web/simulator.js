@@ -4,7 +4,7 @@
   const $ = id => document.getElementById(id);
   const ML = window.ModeLogic;
   const SIM = window.VmuSimulator;
-  if (!ML || !SIM) {
+  if (!ML || !SIM || !window.VmuModelReplays) {
     $('loadError').hidden = false;
     $('inputForm').hidden = true;
     $('cycleBtn').disabled = true;
@@ -19,11 +19,11 @@
   let activeTab = 'telemetry';
   let selectedPreset = 0;
   let phase = 'Manual';
-  let cycle = { running: false, paused: false, kind: 'short', elapsed: 0, next: 0, started: 0, timer: null };
+  let cycle = { running: false, paused: false, kind: 'urban1', rate: 1, elapsed: 0, next: 0, started: 0, timer: null };
 
   function announce(message) { $('announcement').textContent = message; }
   function signed(value) { return (value >= 0 ? '+' : '') + value.toFixed(1); }
-  function formatInput(field, value) { return (value * field.scale).toFixed(field.step === 1 ? 0 : 1); }
+  function formatInput(field, value) { return Number((value * field.scale).toFixed(field.step === 1 ? 0 : 1)).toString(); }
   function point(radius, degrees) {
     const radians = degrees * Math.PI / 180;
     return [160 + radius * Math.cos(radians), 160 + radius * Math.sin(radians)];
@@ -113,15 +113,15 @@
   function updateDraft() {
     const draft = readDraft();
     const invalid = draft.errors.length > 0;
-    const pending = invalid || SIM.INPUTS.some(field => Math.abs(draft.input[field.key] - session.input[field.key]) > 1e-9);
-    $('inputStatus').textContent = invalid ? 'Check inputs' : pending ? 'Pending' : cycle.running ? 'Cycle running' : 'Applied';
+    const pending = invalid || SIM.INPUTS.some(field => Math.abs(draft.input[field.key] * field.scale - Number(formatInput(field, session.input[field.key]))) > 1e-9);
+    $('inputStatus').textContent = invalid ? 'Check inputs' : pending ? 'Pending' : session.origin === 'model' ? 'Model record' : 'Applied';
     $('inputStatus').className = invalid ? 'invalid' : pending ? 'pending' : '';
     $('inputFeedback').classList.toggle('invalid', invalid);
     if (invalid) {
       const field = draft.errors[0].field;
       $('inputFeedback').textContent = field.label + ': enter ' + field.min + '–' + field.max + ' ' + field.unit + ' in steps of ' + field.step + '.';
     } else {
-      $('inputFeedback').textContent = pending ? 'Changes pending. Apply step to update instruments.' : cycle.running ? 'Cycle inputs are applied every 0.1 s.' : 'Instruments show the applied values.';
+      $('inputFeedback').textContent = pending ? 'Changes pending. Apply step to update instruments.' : session.origin === 'model' ? 'Recorded values shown rounded. CSV keeps full precision.' : 'Instruments show the applied values.';
     }
     return draft;
   }
@@ -150,7 +150,8 @@
     const input = session.input;
     $('modeRead').textContent = ML.STATE_NAMES[session.mode];
     $('modeDescription').textContent = MODE_DESCRIPTIONS[session.mode];
-    $('speedRead').textContent = input.speed.toFixed(1);
+    $('speedRead').textContent = Number(input.speed.toFixed(1)).toFixed(1);
+    $('sourceRead').textContent = session.origin === 'model' ? 'Simulink recording · inputs, mode and commands' : 'Manual controller · JavaScript';
     $('rpmRead').textContent = Math.round(input.wEng).toLocaleString('en-US');
     $('socRead').textContent = (input.SOC * 100).toFixed(1);
     $('powerRead').textContent = signed(input.P_dem);
@@ -163,14 +164,14 @@
     });
     [...$('batteryMeter').children].forEach((cell, index) => cell.classList.toggle('filled', index < Math.round(input.SOC * 24)));
     const power = $('powerFill');
-    power.style.left = (20 + Math.min(0, input.P_dem)) + '%';
-    power.style.width = Math.abs(input.P_dem) + '%';
+    power.style.left = ((40 + Math.min(0, input.P_dem)) / 120 * 100) + '%';
+    power.style.width = (Math.abs(input.P_dem) / 120 * 100) + '%';
     power.style.backgroundColor = input.P_dem < 0 ? 'var(--green)' : 'var(--amber)';
     [...$('presetButtons').children].forEach((button, index) => button.setAttribute('aria-pressed', String(index === selectedPreset)));
     $('inputFields').disabled = cycle.running;
     $('stepBtn').disabled = cycle.running;
     $('cycleSelect').disabled = cycle.running;
-    $('cycleBtn').textContent = cycle.running ? 'Pause' : cycle.paused ? 'Resume' : 'Run cycle';
+    $('cycleBtn').textContent = cycle.running ? 'Pause' : cycle.paused ? 'Resume' : 'Play';
     $('phaseRead').textContent = phase;
     $('stepRead').textContent = session.steps;
     const progress = cycle.elapsed / SIM.CYCLES[cycle.kind].duration * 100;
@@ -187,7 +188,7 @@
   const CHARTS = [
     { id: 'speedChart', readout: 'speedChartValue', key: 'speed', scale: 1, min: 0, max: 140, color: '#67b1fc', unit: 'km/h' },
     { id: 'rpmChart', readout: 'rpmChartValue', key: 'wEng', scale: 1, min: 0, max: 7000, color: '#d9ad72', unit: 'rpm' },
-    { id: 'powerChart', readout: 'powerChartValue', key: 'P_dem', scale: 1, min: -20, max: 80, color: '#7ec6d7', unit: 'kW' },
+    { id: 'powerChart', readout: 'powerChartValue', key: 'P_dem', scale: 1, min: -40, max: 80, color: '#7ec6d7', unit: 'kW' },
     { id: 'chargeChart', readout: 'chargeChartValue', key: 'SOC', scale: 100, min: 0, max: 100, color: '#63c6a1', unit: '%' }
   ];
   function drawChart(spec) {
@@ -204,16 +205,17 @@
     const firstStep = records.length ? records[0].step : 0;
     const lastStep = records.length > 1 ? records[records.length - 1].step : firstStep + 1;
     const x = step => pad.left + (step - firstStep) / (lastStep - firstStep) * plotWidth;
-    const y = value => pad.top + plotHeight * (1 - (value - spec.min) / (spec.max - spec.min));
+    const minimum = Math.min(spec.min, ...records.map(record => record.input[spec.key] * spec.scale));
+    const y = value => pad.top + plotHeight * (1 - (value - minimum) / (spec.max - minimum));
     context.font = '10px "Segoe UI", sans-serif';
     context.lineWidth = 1;
     for (let i = 0; i <= 4; i += 1) {
-      const value = spec.min + (spec.max - spec.min) * i / 4;
+      const value = minimum + (spec.max - minimum) * i / 4;
       const py = y(value);
       context.strokeStyle = '#293d53';
       context.beginPath(); context.moveTo(pad.left, py); context.lineTo(width - pad.right, py); context.stroke();
       context.fillStyle = '#a3b5ca'; context.textAlign = 'right';
-      context.fillText(String(value), pad.left - 6, py + 3);
+      context.fillText(Number(value.toFixed(1)).toString(), pad.left - 6, py + 3);
     }
     for (let i = 0; i <= 4; i += 1) {
       const px = pad.left + plotWidth * i / 4;
@@ -239,7 +241,7 @@
         context.textAlign = 'right'; context.fillText(String(last.step), width - pad.right, height - 6);
       }
       $(spec.readout).textContent = (spec.key === 'wEng' ? Math.round(value) : value.toFixed(1)) + ' ' + spec.unit;
-      canvas.setAttribute('aria-label', records.length + ' recorded samples; latest value ' + value.toFixed(1) + ' ' + spec.unit + '. Exact samples are in the session log and CSV export.');
+      canvas.setAttribute('aria-label', records.length + ' recorded samples; latest value ' + value.toFixed(1) + ' ' + spec.unit + '. Full precision is available in the CSV export.');
     } else {
       context.fillStyle = '#a3b5ca'; context.textAlign = 'center';
       context.fillText('No samples yet', pad.left + plotWidth / 2, pad.top + plotHeight / 2);
@@ -263,7 +265,7 @@
       ).join('');
       $('modeTrack').setAttribute('aria-label', 'Recent mode sequence: ' + (groups.map(group => ML.STATE_NAMES[group.mode]).join(', ') || 'no samples'));
     } else if (activeTab === 'log') {
-      $('logNote').textContent = session.records.length > 100 ? 'Showing the latest 100 steps. Export CSV includes all ' + session.records.length + ' retained samples (limit: 1,200).' : 'Each row records an applied controller step. Newest first.';
+      $('logNote').textContent = session.records.length > 100 ? 'Latest 100 samples. CSV includes all ' + session.records.length + ' retained samples (limit: 6,000), with source and full precision.' : 'Manual steps and model records, newest first. CSV includes source and full precision.';
       $('logBody').innerHTML = session.records.length ? session.records.slice(-100).reverse().map(record => {
         const input = record.input;
         const values = [record.step, ML.STATE_NAMES[record.mode], input.speed.toFixed(1), Math.round(input.wEng), input.P_dem.toFixed(1), (input.SOC * 100).toFixed(1)];
@@ -287,18 +289,15 @@
 
   function stopCycle() {
     if (cycle.timer !== null) clearInterval(cycle.timer);
-    cycle = { running: false, paused: false, kind: $('cycleSelect').value, elapsed: 0, next: 0, started: 0, timer: null };
+    cycle = { running: false, paused: false, kind: $('cycleSelect').value, rate: Number($('playbackRate').value), elapsed: 0, next: 0, started: 0, timer: null };
   }
   function advanceCycle() {
     const duration = SIM.CYCLES[cycle.kind].duration;
-    cycle.elapsed = Math.min(duration, (performance.now() - cycle.started) / 1000);
+    cycle.elapsed = Math.min(duration, (performance.now() - cycle.started) / 1000 * cycle.rate);
     const end = Math.min(Math.floor((cycle.elapsed + 1e-7) * 10), duration * 10);
-    // Catch up using fixed sample times, so timer delays never skip controller transitions.
+    // Playback rate affects wall time only. Never skip or interpolate model samples.
     while (cycle.next <= end) {
-      const time = cycle.next / 10;
-      const sample = SIM.sampleCycle(cycle.kind, time);
-      session.step(sample.input, SIM.CYCLES[cycle.kind].name, time);
-      phase = sample.label;
+      session.replay(cycle.kind, cycle.next);
       cycle.next += 1;
     }
     setInputs(session.input);
@@ -307,9 +306,9 @@
       cycle.timer = null;
       cycle.running = false;
       cycle.paused = false;
-      phase = 'Cycle complete · ' + duration + ' s';
-      announce('Drive cycle complete. ' + session.records.length + ' samples recorded.');
-    } else phase += ' · ' + cycle.elapsed.toFixed(1) + ' s';
+      phase = 'Complete · ' + duration + ' s';
+      announce('Model playback complete. ' + session.records.length + ' samples.');
+    } else phase = 'Model time · ' + ((cycle.next - 1) / 10).toFixed(1) + ' / ' + duration + ' s';
     render();
   }
   function pauseCycle() {
@@ -320,9 +319,9 @@
     cycle.timer = null;
     cycle.running = false;
     cycle.paused = true;
-    phase = 'Paused · ' + cycle.elapsed.toFixed(1) + ' s';
+    phase = 'Paused · ' + ((cycle.next - 1) / 10).toFixed(1) + ' s';
     render();
-    announce('Drive cycle paused.');
+    announce('Model playback paused.');
   }
   function toggleCycle() {
     if (cycle.running) { pauseCycle(); return; }
@@ -334,10 +333,10 @@
     }
     cycle.running = true;
     cycle.paused = false;
-    cycle.started = performance.now() - cycle.elapsed * 1000;
+    cycle.started = performance.now() - cycle.elapsed / cycle.rate * 1000;
     advanceCycle();
     cycle.timer = setInterval(advanceCycle, 100);
-    announce('Drive cycle running.');
+    announce('Model playback running at ' + cycle.rate + ' times speed.');
   }
   function selectTab(name, focus) {
     activeTab = name;
@@ -372,7 +371,13 @@
   $('inputForm').addEventListener('submit', event => { event.preventDefault(); applyStep(); });
   $('resetBtn').addEventListener('click', reset);
   $('cycleBtn').addEventListener('click', toggleCycle);
-  $('cycleSelect').addEventListener('change', () => { stopCycle(); phase = 'Manual'; render(); });
+  $('cycleSelect').addEventListener('change', () => { stopCycle(); phase = 'Ready to play'; render(); });
+  $('playbackRate').addEventListener('change', () => {
+    if (cycle.running) advanceCycle();
+    cycle.rate = Number($('playbackRate').value);
+    cycle.started = performance.now() - cycle.elapsed / cycle.rate * 1000;
+    announce('Playback speed: ' + cycle.rate + ' times.');
+  });
   $('clearBtn').addEventListener('click', () => { session.clearData(); render(); announce('Recorded data cleared. Current mode and inputs retained.'); });
   $('exportBtn').addEventListener('click', exportCsv);
   const tabs = [...document.querySelectorAll('[data-tab]')];

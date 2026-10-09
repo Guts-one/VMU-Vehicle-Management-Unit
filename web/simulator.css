@@ -85,7 +85,7 @@ main { max-width: 1512px; margin: 0 auto; padding: 10px 24px 0; }
 .meter-scale { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 7px; }
 .power-meter { position: relative; height: 16px; background: #1b2b3c; border: 1px solid #375066; }
 .power-meter i { position: absolute; height: 100%; background: var(--amber); }
-.power-meter b { position: absolute; height: 22px; left: 20%; top: -4px; width: 2px; background: var(--text); }
+.power-meter b { position: absolute; height: 22px; left: 33.333333%; top: -4px; width: 2px; background: var(--text); }
 .power-scale span:last-child { margin-right: -8px; }
 .presets { margin-top: auto; padding: 14px 0; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 16px; }
 .presets > span { font-size: 12px; white-space: nowrap; }
@@ -120,6 +120,10 @@ input[type="range"]:disabled { cursor: default; opacity: .55; }
 .primary-button { background: var(--amber); border-color: var(--amber); color: #1b160f; font-weight: 600; }
 .primary-button:hover:not(:disabled) { background: #ffc17f; border-color: #ffc17f; }
 .cycle-control { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); }
+.instrument-source { margin: 0; color: var(--muted); font-size: 11px; }
+.playback-speed { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 11px; color: var(--muted); }
+.playback-speed select { padding: 3px 6px; min-height: 30px; background: var(--background); }
+.playback-speed > span { margin-left: auto; }
 .cycle-control > label { display: block; font-size: 12px; margin-bottom: 4px; }
 .cycle-actions { display: flex; gap: 10px; }
 .cycle-actions select { min-width: 0; flex: 1; padding: 7px 9px; font-size: 12px; background-color: var(--background); }

@@ -9,6 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='6' fill='%230b1320'/%3E%3Cpath d='M9 11l11 20 11-20' fill='none' stroke='%23ffad57' stroke-width='4'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="web/simulator.css">
   <script defer src="mode_logic.js"></script>
+  <script defer src="web/model-replays.js"></script>
   <script defer src="web/simulator-session.js"></script>
   <script defer src="web/simulator.js"></script>
 </head>
@@ -24,12 +25,13 @@
   <main>
     <div class="page-heading">
       <h1>Hybrid powertrain simulator</h1>
-      <p>Set an operating point. See how the controller responds.</p>
+      <p>Explore the controller or replay a drive recorded in Simulink.</p>
     </div>
     <noscript><p class="error-banner">JavaScript is required to run the simulator. The controller source and verification results are available in the repository.</p></noscript>
     <p id="loadError" class="error-banner" role="alert" hidden>The simulator could not load. Reload the page, or check that the <code>web/</code> folder and <code>mode_logic.js</code> are beside this file.</p>
     <div class="workbench">
       <section class="panel instruments" aria-label="Applied operating point">
+        <p class="instrument-source" id="sourceRead">Manual controller · JavaScript</p>
         <div class="cluster">
           <div class="gauge" id="rpmGauge" role="img" aria-label="Engine speed: 0 rpm">
             <svg viewBox="0 0 320 320" aria-hidden="true"></svg>
@@ -60,11 +62,11 @@
           <div class="energy-readout">
             <div class="readout-heading"><span>Power demand</span><strong><span id="powerRead">+0.0</span><small> kW</small></strong></div>
             <div class="power-meter" aria-hidden="true"><i id="powerFill"></i><b></b></div>
-            <div class="meter-scale power-scale"><span>−20</span><span>0</span><span>20</span><span>40</span><span>60</span><span>80 kW</span></div>
+            <div class="meter-scale power-scale"><span>−40</span><span>−20</span><span>0</span><span>20</span><span>40</span><span>60</span><span>80 kW</span></div>
           </div>
         </div>
         <div class="presets">
-          <span id="presetsLabel">Operating presets</span>
+          <span id="presetsLabel">Controller test presets</span>
           <div id="presetButtons" class="preset-buttons" role="group" aria-labelledby="presetsLabel"></div>
         </div>
       </section>
@@ -79,14 +81,15 @@
           <div class="action-row"><button class="primary-button" id="stepBtn" type="submit">Apply step</button><button id="resetBtn" type="button">Reset</button></div>
         </form>
         <div class="cycle-control">
-          <label for="cycleSelect">Drive cycle</label>
+          <label for="cycleSelect">Recorded model playback</label>
           <div class="cycle-actions">
-            <select id="cycleSelect"><option value="short">Short cycle · 14 s</option><option value="minute">One-minute cycle · 60 s</option></select>
-            <button id="cycleBtn" type="button">Run cycle</button>
+            <select id="cycleSelect"><option value="urban1">UrbanCycle1 · 195 s</option><option value="urban2">UrbanCycle2 · 400 s</option></select>
+            <button id="cycleBtn" type="button">Play</button>
           </div>
+          <div class="playback-speed"><label for="playbackRate">Playback speed</label><select id="playbackRate"><option value="1">1×</option><option value="4">4×</option><option value="10">10×</option></select><span>0.1 s per sample</span></div>
           <div class="cycle-progress" id="cycleProgress" role="progressbar" aria-label="Drive cycle progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
           <div class="cycle-meta"><span id="phaseRead">Manual</span><span>Step <b id="stepRead">0</b></span></div>
-          <p class="cycle-note">A new cycle starts a new session.</p>
+          <p class="cycle-note">Full vehicle model recordings. Play starts a new session.</p>
         </div>
       </section>
     </div>
@@ -123,7 +126,7 @@
         <div id="thresholdGroups" class="threshold-groups"></div>
       </div>
     </section>
-    <footer class="page-footer"><span>Supervisory logic simulation. Inputs are prescribed; vehicle dynamics are not modelled.</span><span class="shortcuts"><kbd>Space</kbd> step <span aria-hidden="true">·</span> <kbd>R</kbd> reset</span></footer>
+    <footer class="page-footer"><span>Manual controller tests and recorded Simulink drives. Vehicle dynamics run in the source model.</span><span class="shortcuts"><kbd>Space</kbd> step <span aria-hidden="true">·</span> <kbd>R</kbd> reset</span></footer>
     <p class="sr-only" id="announcement" role="status" aria-live="polite"></p>
   </main>
   <dialog id="helpDialog" aria-labelledby="helpTitle">
@@ -131,11 +134,11 @@
     <ol class="help-steps">
       <li><strong>Set the inputs.</strong> Adjust speed, engine RPM, power demand, and battery charge. Negative power demand represents braking.</li>
       <li><strong>Apply a step.</strong> The controller evaluates one state transition. The instruments show the last applied inputs; edits remain pending until applied.</li>
-      <li><strong>Explore a preset or cycle.</strong> Presets reach an operating mode from standstill and record the transitions. Cycles start a fresh session and apply scripted inputs every 0.1 s. Pause and resume at any time.</li>
-      <li><strong>Inspect the results.</strong> Telemetry and the session log record the inputs and controller outputs. Export CSV saves up to the latest 1,200 samples. Clear data keeps the current mode; Reset restores the initial state.</li>
+      <li><strong>Test or replay.</strong> Presets are manual test inputs that reach a mode from standstill. UrbanCycle1 and UrbanCycle2 replay synchronized inputs, modes, and enable commands exported from the full Simulink/Simscape model every 0.1 s. Playback starts a fresh session; pause, resume, or choose 1×, 4×, or 10× speed without dropping samples.</li>
+      <li><strong>Inspect the results.</strong> CSV saves up to 6,000 samples with full input precision, SOC as a fraction, model time, and source. The display rounds values for readability. Clear data keeps the current mode; Reset restores the initial state. A manual step after playback evaluates the JS controller from the displayed mode.</li>
     </ol>
-    <p>The engine-speed dial is an input to the supervisor, not a calculated engine response. Motor, generator, and engine indicators show enable commands; they do not measure energy flow.</p>
-    <p>JavaScript inputs use the same fixed-point conversion and mode logic as the project's C comparison harness. See the <a href="https://github.com/Guts-one/VMU-Vehicle-Management-Unit/blob/main/reports/README.md" target="_blank" rel="noopener noreferrer">verification evidence and limits</a>.</p>
+    <p>Engine RPM is an input to the supervisor. In a recording it comes from the vehicle model; in a preset you supply it. EV mode does not require zero RPM. The model starts with a rotating engine, and an OFF enable command does not force that shaft to stop.</p>
+    <p>Playback preserves the model's recorded decisions. Re-evaluating these inputs with fixed-point C/JavaScript produces some different decisions near thresholds, so those results are checked separately. The browser runs no C or live vehicle dynamics. See the <a href="https://github.com/Guts-one/VMU-Vehicle-Management-Unit/blob/main/verification/model_replay/README.md" target="_blank" rel="noopener noreferrer">recording provenance and comparison results</a>. Enable indicators are commands, not energy-flow measurements.</p>
     <p class="help-credit">Original browser simulator by Danilo Varini. Continued development by Gustavo Igor da Silva; <a href="https://github.com/Guts-one/VMU-Vehicle-Management-Unit/blob/main/docs/contributions.md" target="_blank" rel="noopener noreferrer">full contribution record</a>.</p>
   </dialog>
 </body>

@@ -2,4 +2,5 @@
 * -text
 *.sh text eol=lf
 mode_logic_sim.html linguist-documentation
+web/model-replays.js linguist-generated
 reports/** linguist-generated

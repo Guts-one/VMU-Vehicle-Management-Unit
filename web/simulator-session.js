@@ -1,19 +1,19 @@
-/* Session and scripted inputs for the simulator UI. The controller remains in mode_logic.js. */
+/* Manual controller steps and recorded full-model playback for the simulator UI. */
 (function (root, factory) {
   'use strict';
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('../mode_logic.js'));
+    module.exports = factory(require('../mode_logic.js'), require('./model-replays.js'));
   } else {
-    root.VmuSimulator = factory(root.ModeLogic);
+    root.VmuSimulator = factory(root.ModeLogic, root.VmuModelReplays);
   }
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (logic) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (logic, replays) {
   'use strict';
 
   const DEFAULT_INPUTS = Object.freeze({ speed: 0, wEng: 0, P_dem: 0, SOC: 0.40 });
   const INPUTS = Object.freeze([
     { id: 'speed', key: 'speed', label: 'Vehicle speed', min: 0, max: 140, step: 0.1, unit: 'km/h', scale: 1 },
     { id: 'weng', key: 'wEng', label: 'Engine speed', min: 0, max: 7000, step: 1, unit: 'rpm', scale: 1 },
-    { id: 'pdem', key: 'P_dem', label: 'Power demand', min: -20, max: 80, step: 0.1, unit: 'kW', scale: 1 },
+    { id: 'pdem', key: 'P_dem', label: 'Power demand', min: -40, max: 80, step: 0.1, unit: 'kW', scale: 1 },
     { id: 'soc', key: 'SOC', label: 'Battery charge', min: 0, max: 100, step: 0.1, unit: '%', scale: 100 }
   ]);
   const PRESETS = Object.freeze([
@@ -24,10 +24,10 @@
     { name: 'ICE', input: { speed: 40, P_dem: 0, SOC: 0.20, wEng: 900 } },
     { name: 'Hybrid', input: { speed: 50, P_dem: 45, SOC: 0.45, wEng: 3500 } }
   ]);
-  const MAX_RECORDS = 1200;
+  const MAX_RECORDS = 6000;
   const CSV_COLUMNS = [
     'step', 'cycle_time_s', 'source', 'mode', 'speed_kmh', 'engine_rpm',
-    'power_kw', 'soc_percent', 'motor_enabled', 'generator_enabled', 'engine_enabled'
+    'power_kw', 'soc_fraction', 'motor_enabled', 'generator_enabled', 'engine_enabled'
   ];
 
   function validate(input) {
@@ -48,6 +48,7 @@
       this.input = { ...DEFAULT_INPUTS };
       this.steps = 0;
       this.records = [];
+      this.origin = 'controller';
     }
 
     clearData() { this.records = []; }
@@ -55,16 +56,30 @@
     step(input, source = 'Manual', time = null) {
       validate(input);
       const result = logic.stepPhysical(this.mode, input);
-      this.mode = result.mode;
-      this.outputs = result.outputs;
+      this.record(input, result.mode, result.outputs, source, time, 'controller');
+      return result;
+    }
+
+    replay(kind, index) {
+      const sample = sampleCycle(kind, index);
+      // Keep plant inputs, leaf state, and enable commands together. Re-running
+      // the fixed-point JS controller would produce a different recorded drive.
+      this.record(sample.input, sample.mode, sample.outputs,
+        'Model: ' + CYCLES[kind].name, sample.time, 'model');
+      return sample;
+    }
+
+    record(input, mode, outputs, source, time, origin) {
+      this.mode = mode;
+      this.outputs = { ...outputs };
       this.input = { ...input };
+      this.origin = origin;
       this.steps += 1;
       this.records.push({
         step: this.steps, time: time, source: source, mode: this.mode,
         input: { ...input }, outputs: { ...this.outputs }
       });
       if (this.records.length > MAX_RECORDS) this.records.shift();
-      return result;
     }
 
     // Each real transition is recorded. A preset starts from standstill, unlike a manual step.
@@ -86,69 +101,26 @@
       const escape = value => '"' + String(value).replace(/"/g, '""') + '"';
       const rows = this.records.map(record => [
         record.step, record.time === null ? '' : record.time.toFixed(1), record.source,
-        logic.STATE_NAMES[record.mode], record.input.speed.toFixed(1), Math.round(record.input.wEng),
-        record.input.P_dem.toFixed(1), (record.input.SOC * 100).toFixed(1),
+        logic.STATE_NAMES[record.mode], record.input.speed, record.input.wEng,
+        record.input.P_dem, record.input.SOC,
         record.outputs.Mot_Enable, record.outputs.Gen_Enable, record.outputs.ICE_Enable
       ]);
       return [CSV_COLUMNS, ...rows].map(row => row.map(escape).join(',')).join('\r\n') + '\r\n';
     }
   }
 
-  // Operating points retained from the original simulator. They prescribe inputs, not physics.
-  // Each tuple is [speed km/h, demand kW, battery fraction, engine rpm].
-  const SHORT_POINTS = [
-    ['At rest', [0, 0, 0.58, 0]],
-    ['EV launch', [8, 10, 0.57, 300]],
-    ['Urban acceleration', [18, 18, 0.56, 600]],
-    ['Urban cruise', [28, 12, 0.54, 800]],
-    ['Throttle lift', [20, 1, 0.54, 700]],
-    ['Regenerative braking', [18, -8, 0.55, 400]],
-    ['Slowing down', [6, -10, 0.56, 100]],
-    ['Pickup', [22, 15, 0.55, 1200]],
-    ['Overtake', [37, 70, 0.52, 2500]],
-    ['Engine crank', [42, 68, 0.50, 3500]],
-    ['Hybrid cruise', [50, 45, 0.49, 4000]],
-    ['Wind down', [48, 20, 0.49, 2800]]
-  ];
-  const MINUTE_SEGMENTS = [
-    [0, 5, 'Gentle launch', [0, 4, 0.62, 0], [30, 20, 0.60, 500]],
-    [5, 12, 'Hard acceleration', [30, 20, 0.60, 500], [80, 68, 0.56, 2000]],
-    [12, 18, 'Climb to 120', [80, 60, 0.56, 2000], [120, 55, 0.52, 3200]],
-    [18, 24, 'Deceleration', [120, -4, 0.52, 3200], [30, -18, 0.55, 1200]],
-    [24, 34, 'Pickup', [30, 14, 0.55, 1200], [100, 58, 0.51, 2800]],
-    [34, 42, 'Highway', [100, 42, 0.51, 2800], [120, 52, 0.49, 4200]],
-    [42, 50, 'Slow traffic', [120, -5, 0.49, 4200], [40, -14, 0.51, 1500]],
-    [50, 60, 'Cool down', [40, 8, 0.51, 1500], [70, 30, 0.46, 2600]]
-  ];
-  const CYCLES = Object.freeze({
-    short: { name: 'Short cycle', duration: 14 },
-    minute: { name: 'One-minute cycle', duration: 60 }
-  });
+  const CYCLES = Object.freeze(Object.fromEntries(Object.entries(replays ? replays.cycles : {}).map(([id, cycle]) =>
+    [id, { name: cycle.name, duration: cycle.duration, samples: cycle.rows.length }])));
 
-  function sampleCycle(kind, seconds) {
-    if (!CYCLES[kind] || !Number.isFinite(seconds)) throw new RangeError('Invalid cycle or time.');
-    const elapsed = Math.max(0, Math.min(CYCLES[kind].duration, seconds));
-    let start, end, label, fraction;
-    if (kind === 'short') {
-      const position = elapsed / 14 * (SHORT_POINTS.length - 1);
-      const index = Math.min(SHORT_POINTS.length - 2, Math.floor(position));
-      start = SHORT_POINTS[index][1];
-      end = SHORT_POINTS[index + 1][1];
-      label = elapsed === 0 ? SHORT_POINTS[0][0] : SHORT_POINTS[index + 1][0];
-      fraction = position - index;
-    } else {
-      const segment = MINUTE_SEGMENTS.find(item => elapsed < item[1]) || MINUTE_SEGMENTS[MINUTE_SEGMENTS.length - 1];
-      [ , , label, start, end ] = segment;
-      fraction = (elapsed - segment[0]) / (segment[1] - segment[0]);
+  function sampleCycle(kind, index) {
+    if (!CYCLES[kind] || !Number.isInteger(index) || index < 0 || index >= CYCLES[kind].samples) {
+      throw new RangeError('Invalid recording or sample index.');
     }
-    const eased = (1 - Math.cos(Math.PI * fraction)) / 2;
-    const values = start.map((value, index) => value + (end[index] - value) * eased);
-    // Match the precision of the visible numeric inputs.
-    const input = {
-      speed: Number(values[0].toFixed(1)), P_dem: Number(values[1].toFixed(1)),
-      SOC: Math.round(values[2] * 1000) / 1000, wEng: Math.round(values[3])
+    const row = replays.cycles[kind].rows[index];
+    return { time: index / 10,
+      input: { speed: row[0], wEng: row[1], P_dem: row[2], SOC: row[3] },
+      mode: row[4], outputs: { Mot_Enable: row[5], Gen_Enable: row[6], ICE_Enable: row[7] }
     };
-    return { input: input, label: label };
   }
 
   return { Session, DEFAULT_INPUTS, INPUTS, PRESETS, CYCLES, MAX_RECORDS, sampleCycle };
