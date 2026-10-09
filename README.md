@@ -76,6 +76,8 @@ reports/        Selected verification evidence
 
 `mode_logic.js` and `mode_logic_sim.html` remain at the root so the published simulator URL stays stable. Reports include the assets needed to read them; compiled programs, object files, and coverage counters are generated locally.
 
+Development uses short-lived pull requests into `main`. See the [development workflow](CONTRIBUTING.md) for reviews, CI, and releases.
+
 ## Credits and licensing
 
 The residency team was Danilo Varini, Marinel Almeida, Bruna, Hugo, and Gustavo Igor da Silva. See [contributions](docs/contributions.md) for the division of work.

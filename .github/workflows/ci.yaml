@@ -2,9 +2,16 @@ name: CI
 
 on:
   pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -118,3 +125,22 @@ jobs:
 
       - name: JavaScript branch coverage
         run: npm run coverage
+
+  required-checks:
+    name: Required CI
+    if: ${{ always() }}
+    needs:
+      - static-analysis
+      - build-and-test
+      - js-c-equivalence
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every verification job to succeed
+        env:
+          STATIC_ANALYSIS: ${{ needs.static-analysis.result }}
+          C_TESTS: ${{ needs.build-and-test.result }}
+          JS_VERIFICATION: ${{ needs.js-c-equivalence.result }}
+        run: |
+          test "$STATIC_ANALYSIS" = success
+          test "$C_TESTS" = success
+          test "$JS_VERIFICATION" = success
